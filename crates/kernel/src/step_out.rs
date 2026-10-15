@@ -1230,7 +1230,7 @@ fn analytic_sheets(ex: &p21::Exchange, merged_surfaces: &std::collections::HashS
         });
         let x = match seam_dir {
             Some(x) => Some(x),
-            None => {
+            None => gap_middle(ex, &loops, z, &radial).or_else(|| {
                 let mean = loops
                     .iter()
                     .flatten()
@@ -1239,13 +1239,58 @@ fn analytic_sheets(ex: &p21::Exchange, merged_surfaces: &std::collections::HashS
                     .filter_map(|q| unit(radial(q)))
                     .fold([0.0; 3], add);
                 unit(mul(mean, -1.0))
-            }
+            }),
         };
         if let Some(x) = x {
             out.insert(sid, x);
         }
     }
     out
+}
+
+/// The middle of the one angular gap that a face on a cylinder or cone leaves around its axis
+/// `z`. The face's boundary vertices are sorted by angle; each two neighbours are joined by one
+/// of its edges except across the gap (a 270° face split at 0°, 90°, 180° and 270° leaves
+/// 270°–360°). None unless there are three angles or more and exactly one gap: two vertices can
+/// be joined either way round.
+fn gap_middle(ex: &p21::Exchange, loops: &[Vec<(u64, bool)>], z: V3, radial: &impl Fn(V3) -> V3) -> Option<V3> {
+    use std::f64::consts::TAU;
+    let mut edges: Vec<(V3, V3)> = Vec::new();
+    for (e, _) in loops.iter().flatten() {
+        let p = ex.get(*e)?.params();
+        let (a, b) = (vertex_point(ex, p.get(1)?.as_ref_id()?)?, vertex_point(ex, p.get(2)?.as_ref_id()?)?);
+        edges.push((unit(radial(a))?, unit(radial(b))?));
+    }
+    let e1 = edges.first()?.0;
+    let e2 = unit(cross(z, e1))?;
+    let angle = |d: V3| dot(d, e2).atan2(dot(d, e1)).rem_euclid(TAU);
+    let close = |a: f64, b: f64| {
+        let d = (a - b).rem_euclid(TAU);
+        d < 1e-6 || TAU - d < 1e-6
+    };
+    let mut angles: Vec<f64> = Vec::new();
+    for (a, b) in &edges {
+        for t in [angle(*a), angle(*b)] {
+            if !angles.iter().any(|s| close(*s, t)) {
+                angles.push(t);
+            }
+        }
+    }
+    if angles.len() < 3 {
+        return None;
+    }
+    angles.sort_by(f64::total_cmp);
+    let joined = |s: f64, t: f64| {
+        edges.iter().any(|(a, b)| {
+            let (x, y) = (angle(*a), angle(*b));
+            (close(x, s) && close(y, t)) || (close(x, t) && close(y, s))
+        })
+    };
+    let n = angles.len();
+    let gaps: Vec<(f64, f64)> = (0..n).filter_map(|i| Some((*angles.get(i)?, *angles.get((i + 1) % n)?))).filter(|(s, t)| !joined(*s, *t)).collect();
+    let [(s, t)] = gaps[..] else { return None };
+    let m = s + (t - s).rem_euclid(TAU) / 2.0;
+    unit(add(mul(e1, m.cos()), mul(e2, m.sin())))
 }
 
 /// The B-rep entities of one body as truck writes them, parsed, and the B-spline sheets to write
