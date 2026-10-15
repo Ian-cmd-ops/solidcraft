@@ -242,7 +242,7 @@ fn round_trip_features() {
 /// wall as three quarter-turn B-spline pieces; the export merges them into one 270° face and must
 /// write that face's cylinder, not the first piece's quarter sheet. The seam direction came from
 /// the mean direction of the face's vertices, which is zero at 0°, 90°, 180° and 270°, so the
-/// merged face kept the quarter sheet and read back about 9% short with no warning.
+/// merged face kept the quarter sheet and read back about 7% short with no warning.
 #[test]
 fn shelled_three_quarter_tube_round_trips() {
     let rect =
