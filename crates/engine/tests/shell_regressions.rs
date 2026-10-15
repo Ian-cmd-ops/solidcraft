@@ -12,10 +12,13 @@ fn run(s: &mut Session, id: &str, p: serde_json::Value) {
 /// edge line (y = 0), then a 1 mm shell open at the bottom. The shell refused a corner where
 /// the cylinder meets the box's front and side faces.
 ///
-/// Still open: the corner is a saddle like seed 83's, but one of its faces is the cylinder, and
-/// `split_corner` takes planar faces only.
+/// Still open. The failing corner (47.5, 0, 2.5) has five faces: the box's front and side, the
+/// cylinder's end cap, and the cylinder wall in two halves, whose seam lies on the box's front
+/// plane. The box's side and the cap share a plane but face opposite ways, as at seed 83's
+/// saddle, but here the shell also moves the seam off the front plane, so the corner changes
+/// shape in a way a split into corners joined by straight edges cannot express.
 #[test]
-#[ignore = "saddle corner with a curved face: split_corner is planar only"]
+#[ignore = "saddle corner on a cylinder seam: not a planar split_corner case"]
 fn shell_box_with_side_cylinder_on_the_edge_line() {
     let mut s = Session::default();
     run(&mut s, "solid.box", json!({"height": 30.0, "length": 47.5, "width": 45.0}));
