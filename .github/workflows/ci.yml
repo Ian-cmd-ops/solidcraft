@@ -284,9 +284,11 @@ jobs:
         with:
           name: nextest-archive
       - name: Boolean properties and atomic commands
+        # The defaults (8 cases, seeds 0..4) take 159 s and 802 s on a 2-core VM; four times the
+        # cases and twice the seeds are estimated at about 40 minutes there (not yet timed on CI).
         env:
-          PROPTEST_CASES: "64"
-          ATOMIC_SEEDS: "0..16"
+          PROPTEST_CASES: "32"
+          ATOMIC_SEEDS: "0..8"
         run: |
           cargo nextest run --archive-file tests.tar.zst --workspace-remap . --extract-to . --extract-overwrite \
             --profile ci --ignore-default-filter --success-output final -E "binary(boolean_props) | binary(atomic_commands)"
