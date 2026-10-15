@@ -351,6 +351,20 @@ mod same_as_before {
         }
     }
 
+    /// A NaN coordinate breaks the endpoint sort: the search goes on without a panic.
+    #[test]
+    fn nan_triangles_do_not_panic() {
+        let good = [Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.0, 0.0), Point3::new(0.0, 1.0, 0.0)];
+        let nan = [Point3::new(f64::NAN, 0.0, 0.0), Point3::new(1.0, f64::NAN, 0.0), Point3::new(0.0, 1.0, 0.5)];
+        let crossing = [Point3::new(0.2, 0.2, -1.0), Point3::new(0.2, 0.2, 1.0), Point3::new(0.6, 0.2, 0.0)];
+        for (a, b) in [(vec![good, nan], vec![crossing, nan]), (vec![nan, nan], vec![nan]), (vec![nan], vec![good])] {
+            let ba: Vec<_> = a.iter().map(|t| (*t, t.iter().collect())).collect();
+            let bb: Vec<_> = b.iter().map(|t| (*t, t.iter().collect())).collect();
+            let r = std::panic::catch_unwind(|| candidate_pairs(&ba, &bb, Vector3::new(1.0, 0.0, 0.0)));
+            assert!(r.is_ok(), "panicked on {a:?} / {b:?}");
+        }
+    }
+
     #[test]
     fn same_collisions_in_the_same_order() {
         for seed in 0..200u64 {
