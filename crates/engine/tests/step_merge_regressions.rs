@@ -46,3 +46,35 @@ fn shelled_thin_three_quarter_tube_keeps_its_volume() {
     );
     round_trips(&s);
 }
+
+/// The same tube turned further: the merged wall leaves a gap of 60°, 30° or 10°. Its two straight
+/// end edges lie either side of the gap, so the mean direction of the face's points no longer
+/// points into the face, and a seam put opposite it falls inside the face. The seam belongs in the
+/// middle of the gap.
+#[test]
+fn shelled_thin_wide_tube_keeps_its_volume() {
+    for turn in [300.0_f64, 330.0, 350.0] {
+        let mid = (turn / 2.0).to_radians();
+        let mut s = Session::default();
+        run(
+            &mut s,
+            json!([
+                {"command":"sketch.create","params":{"plane":"XZ"}},
+                {"command":"sketch.rectangle.two_point","params":{"p0":[10.0,0],"p1":[12.5,27.5]}},
+                {"command":"sketch.finish","params":{}},
+                {"command":"solid.revolve","params":{"angle":format!("{turn} deg"),"axis":"Z"}},
+                {"command":"solid.shell","params":{"faces":[[11.0 * mid.cos(), 11.0 * mid.sin(), 0.0]],"thickness":1.0}}
+            ]),
+        );
+        let st = s.model.state();
+        assert_eq!(st.bodies.len(), 1, "{turn} deg");
+        let body = &st.bodies[0].body;
+        let text = step_export(&[body], "test").unwrap_or_else(|e| panic!("{turn} deg export: {e}"));
+        let imp = step_import(&text).unwrap_or_else(|e| panic!("{turn} deg import: {e}"));
+        assert_eq!(imp.bodies.len(), 1, "{turn} deg {:?}", imp.warnings);
+        assert!(imp.bodies[0].closed && imp.warnings.is_empty(), "{turn} deg {:?}", imp.warnings);
+        let (a, b) = (measure(body).unwrap(), measure(&imp.bodies[0].body).unwrap());
+        assert!((a.volume - b.volume).abs() < 1e-3 * a.volume, "{turn} deg volume {} -> {}", a.volume, b.volume);
+        assert!((a.area - b.area).abs() < 1e-3 * a.area, "{turn} deg area {} -> {}", a.area, b.area);
+    }
+}
