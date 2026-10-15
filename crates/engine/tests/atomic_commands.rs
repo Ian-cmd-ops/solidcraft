@@ -8,14 +8,14 @@
 //! The designs come from the engine's own fuzzer (`fuzz::run`), so these tests cover every
 //! command it can generate: sketches, extrudes, revolves, holes, patterns, fillets, shells.
 //!
-//! Seeds: `ATOMIC_SEEDS` (default 0..24). Nightly: `ATOMIC_SEEDS=0..500`.
+//! Seeds: `ATOMIC_SEEDS` (default 0..4, kept small for PR CI). Nightly: `ATOMIC_SEEDS=0..500`.
 
 use solidcraft_doc::Document;
 use solidcraft_engine::{Session, fuzz};
 
 fn seeds() -> std::ops::Range<u64> {
-    let s = std::env::var("ATOMIC_SEEDS").unwrap_or_else(|_| "0..24".into());
-    let (a, b) = s.split_once("..").expect("ATOMIC_SEEDS looks like 0..24");
+    let s = std::env::var("ATOMIC_SEEDS").unwrap_or_else(|_| "0..4".into());
+    let (a, b) = s.split_once("..").expect("ATOMIC_SEEDS looks like 0..4");
     a.parse().unwrap()..b.parse().unwrap()
 }
 

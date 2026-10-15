@@ -4,7 +4,7 @@
 //! inputs, and when a case fails it shrinks the inputs to a small case that still fails. Paste
 //! that case into a normal `#[test]` as a regression test.
 //!
-//! Case count: `PROPTEST_CASES` (default 32 here, kept small for PR CI). Use a high count in a
+//! Case count: `PROPTEST_CASES` (default 8 here: about 4 minutes on 2 cores, kept small for PR CI). Use a high count in a
 //! nightly job, for example `PROPTEST_CASES=2000 cargo test -p solidcraft-kernel --test boolean_props`.
 //! proptest saves every failing seed in `tests/boolean_props.proptest-regressions`. Commit it.
 
@@ -105,7 +105,7 @@ fn cfg(default: u32) -> ProptestConfig {
 }
 
 proptest! {
-    #![proptest_config(cfg(32))]
+    #![proptest_config(cfg(8))]
 
     /// Generic placement: these must all pass. A failure is a real bug.
     #[test]
