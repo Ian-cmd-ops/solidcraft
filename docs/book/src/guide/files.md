@@ -16,6 +16,13 @@ Opening a STEP or IGES file creates a design with the file's bodies as a base fe
 inserting one adds them to the current design. Later features build on them. Mesh bodies render,
 measure, move and export, but solid features need B-rep bodies.
 
+Every imported file (STEP, IGES, 3MF, STL or OBJ) comes in as a new component named after the
+file, so its bodies never mix with yours. A STEP assembly keeps its structure: its parts and
+sub-assemblies become nested components, and a part used several times is one component with an
+occurrence for each place. The imported assembly is rigid: moving its component moves everything,
+and its parts don't move on their own. Right-click the component and choose **Unlock Contents** to
+joint the parts one by one. Undo removes a whole import in one step.
+
 **File → Save as mesh…** (also on the Mesh tab under Modify, and in the right-click menu of a
 body) saves the selected bodies as STL, 3MF or 3MF with face tags (below). With **Send to slicer** ticked, it writes the file to
 a temporary folder and opens it in the chosen slicer instead of asking for a file name. The slicer
@@ -68,7 +75,7 @@ is available. Missing or incompatible pictures use the usual thumbnail generatio
 The default `cache: false` omits the portable thumbnail too.
 The repository's `docs/design-container.md` describes limits and encoding details.
 
-Current designs use format 21, including design properties, named render setups, opaque PBR looks, thin extrudes, sheet metal perforation fields, associative editable sketch patterns, editable associative offset-distance dimensions, the style of sketch text (bold, italic, alignment, spacing and the curve it follows), face anchors on a piece of a face by its own name, sheet metal rims and bend ends, bend edges for Convert to Sheet Metal, the tear corner relief of sheet metal rules, the names of projected edges, physical materials defined in the design, the font of sketch text, sheet metal corner relief shapes, sketch face anchors on cylinder caps, sketch axis
+Current designs use format 21, including design properties, named render setups, opaque PBR looks, thin extrudes, sheet metal perforation fields, associative editable sketch patterns, editable associative offset-distance dimensions, the style of sketch text (bold, italic, alignment, spacing and the curve it follows), face anchors on a piece of a face by its own name, sheet metal rims and bend ends, bend edges for Convert to Sheet Metal, the tear corner relief of sheet metal rules, the names of projected edges, physical materials defined in the design, the font of sketch text, the expressions behind a sketch text's height, place and angle, sheet metal corner relief shapes, sketch face anchors on cylinder caps, sketch axis
 links, persistent
 names from exact face history, exact planar shell-face anchors, persistent analytic offset boundary roles and
 association profile references, durable sketch face anchors, periodic fit splines and versioned
