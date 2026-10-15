@@ -1237,8 +1237,12 @@ fn par_bench() {
 }
 
 /// `include` before the runs: kept to check the new one answers the same everywhere.
-#[cfg(test)]
-mod include_same_as_before {
+///
+/// Not part of the API. Built only for tests, or with the `test-hooks` feature, so the
+/// SolidCraft kernel tests can run this check in CI (this crate's own tests do not run there).
+#[cfg(any(test, feature = "test-hooks"))]
+#[doc(hidden)]
+pub mod include_test_hooks {
     use super::*;
 
     fn old_include(b: &PolyBoundary, c: Point2) -> bool {
@@ -1288,10 +1292,12 @@ mod include_same_as_before {
         PolyBoundary(loops, boxes, runs)
     }
 
-    #[test]
-    fn include_answers_as_before() {
+    /// The point-in-trim test with run boxes answers as the old one did, on random loops
+    /// (some on a grid) probed at random, on vertices, on edges and just either side of them.
+    /// Returns how many points were checked.
+    pub fn include_answers_as_before(seeds: std::ops::Range<u64>) -> std::result::Result<usize, String> {
         let mut checked = 0usize;
-        for seed in 0..120u64 {
+        for seed in seeds {
             let mut g = Lcg(seed * 104729 + 3);
             // A wobbly outer loop and a few holes, up to 300 segments each, some on a grid.
             let mut loops = Vec::new();
@@ -1313,8 +1319,11 @@ mod include_same_as_before {
                 loops.push(lp);
             }
             let b = boundary(loops.clone());
+            let mut wrong = None;
             let mut probe = |c: Point2| {
-                assert_eq!(b.include(c), old_include(&b, c), "seed {seed}: point {c:?}");
+                if wrong.is_none() && b.include(c) != old_include(&b, c) {
+                    wrong = Some(c);
+                }
                 checked += 1;
             };
             for _ in 0..400 {
@@ -1334,7 +1343,17 @@ mod include_same_as_before {
                     probe(on - nrm * (TOLERANCE * 3.0));
                 }
             }
+            if let Some(c) = wrong {
+                return Err(format!("seed {seed}: point {c:?} answered differently"));
+            }
         }
-        assert!(checked > 100_000, "{checked}");
+        Ok(checked)
+    }
+
+    #[cfg(test)]
+    #[test]
+    fn hook_passes() {
+        let n = include_answers_as_before(0..120);
+        assert!(matches!(n, Ok(n) if n > 100_000), "{n:?}");
     }
 }
