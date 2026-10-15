@@ -31,9 +31,11 @@ Spend the rest finishing, checking, and writing the kit and report.
 ## Step 2. Observe (about 15 minutes)
 
 1. Record upstream `main`'s SHA and what changed since the last run (`git log --oneline <last>..upstream/main`).
-2. Query the search API for Ian's items (`lessons.md`). Compare state, comment counts and
-   `updated_at` with `state/seen.json`.
-3. For each item that changed, read its PR page and note any new owner comment.
+2. Read `state/upstream/SUMMARY.md` and the `<number>.json` files. CT 115 writes them twice a day
+   with `gh`, so they hold the owner's exact comments, mergeable state and failing checks.
+   Check the commit time of `state/upstream/`. If it is older than 24 hours, say so in the report.
+3. Also query the search API (`lessons.md`) and compare with `state/seen.json`. It catches
+   activity newer than the last sync. For such an item, read its PR page as a hint only.
    Quote nothing longer than one sentence in the report; summarise the rest.
 4. For each open PR branch, trial-merge `upstream/main`. Note conflicts.
 5. Note merged or closed items. A merged fix may change the failing-seed list.

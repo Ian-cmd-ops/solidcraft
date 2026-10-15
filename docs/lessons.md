@@ -25,6 +25,8 @@ Things that went wrong or cost time before. Add a line when a run learns somethi
 - The PR page `https://github.com/bherbruck/solidcraft/pull/<n>` works through WebFetch for reading comments,
   but it can be stale or summarised. Treat it as a hint. Ask Ian to paste `gh pr view <n> -R bherbruck/solidcraft --comments` when the exact words matter.
 - The fork accepts pushes after `add_repo` with `access: push`.
+- **Exact owner comments come from CT 115.** `tools/sync_upstream.py` runs there with `gh` logged in
+  as Ian-cmd-ops and commits them to `state/upstream/`. Prefer those files over the PR page.
 
 ## Posting
 
