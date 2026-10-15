@@ -4,6 +4,8 @@
 - **2026-10-15** Setup: kit and run procedure built on the `ops` branch; daily scheduled run created.
   Open: PRs #1307, #1308, #1309, #1316, #1495, #1496, #1497, #1498 and issue #1494.
 
+- **2026-10-15 (evening run, stopped by Ian)** #1497 merged with main 843c548 and pushed to the fork at 622f234; the diff is now the two seed 17 tests. Kit kits/2026-10-15 is ready and not posted. Not done: the uneven-split seam check (notched tube shelled; no shape failed so far, not reproduced), state/grind-state.md, state/seen.json, reports/2026-10-15.md. Seed 55 shrinks to 4 commands (see the kit issue). Handed to the local OpenCode machine.
+
 ## Active
 - none
 
