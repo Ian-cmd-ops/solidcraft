@@ -225,10 +225,11 @@ fn candidate_pairs(
                 open[segnum].push(index);
             }
             EndPointType::Back => {
-                // Every interval opens before it closes; if the sort broke that (a NaN), panic as
-                // the earlier search did, so the caller's guard turns it into a failed boolean.
-                let i = open[segnum].iter().position(|idx| *idx == index).unwrap();
-                open[segnum].swap_remove(i);
+                // Every interval opens before it closes unless a NaN broke the sort. Then the
+                // interval stays open: more box tests, never a panic (the web build aborts on any).
+                if let Some(i) = open[segnum].iter().position(|idx| *idx == index) {
+                    open[segnum].swap_remove(i);
+                }
             }
         }
     }
