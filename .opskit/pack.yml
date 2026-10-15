@@ -1,0 +1,25 @@
+# OpsKit member manifest. Contract: CascadeSTEAM/opskit schemas/project.schema.json.
+# Mount from CT 115: see README.md "Mount in opskit".
+contract: 1
+name: solidcraft
+description: SolidCraft contributor subagent and methodology for test-first fixes and PR kits to bherbruck/solidcraft.
+data_classification: public
+sync: symlink
+agents:
+  - path: agents/solidcraft-dev.md
+skills:
+  - path: .opencode/skills/solidcraft
+docs:
+  - docs/standards.md
+  - docs/repo-facts.md
+  - docs/lessons.md
+  - docs/run-procedure.md
+trust:
+  bash: ask
+  tool_deny:
+    - "mikromcp_*"
+    - "erpnext_*"
+    - "technitium_*"
+    - "proxmox_*"
+    - "wireguard_*"
+    - "relay-shell_*"
