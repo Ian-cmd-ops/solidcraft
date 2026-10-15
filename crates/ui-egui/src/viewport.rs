@@ -2100,6 +2100,12 @@ pub fn show(app: &mut SolveApp, ui: &mut egui::Ui) {
     app.viewport.rect = Some(rect);
     refresh_layout(app, ui.ctx().pixels_per_point());
     let resp = ui.interact(rect, ui.id().with("viewport"), Sense::click_and_drag());
+    let flat = crate::dialogs_sheet::flat_active(app);
+    if !flat {
+        app.flat_view.fitted = false;
+    }
+    let input =
+        if flat { crate::dialogs_sheet::navigate(app, ui, rect, &resp) } else { crate::navigation::handle(app, ui, rect, &resp, NavCaps::MODEL) };
     let CameraInput {
         hover,
         scroll,
@@ -2115,7 +2121,7 @@ pub fn show(app: &mut SolveApp, ui: &mut egui::Ui) {
         pan,
         primary_nav,
         mode,
-    } = crate::navigation::handle(app, ui, rect, &resp, NavCaps::MODEL);
+    } = input;
     app.viewport.physical_scale = ui.ctx().pixels_per_point();
     let proj = projection(app, rect);
     if let Ok(mut cache) = app.viewport.display.lock() {
@@ -3280,6 +3286,17 @@ fn view_menu(app: &mut SolveApp, ui: &mut egui::Ui, button: Rect) -> bool {
                 });
                 ui.checkbox(&mut s.follow_camera, crate::i18n::tr_label("Follow camera (Look At sketches)"));
             });
+            // The agent chat panel, once the chat is turned on in Preferences.
+            if crate::agent_chat::shown(app) {
+                ui.separator();
+                let mut open = app.agent_chat.open;
+                let r = ui.checkbox(&mut open, crate::agent_chat::panel_tip());
+                crate::scenario::publish_handle("view:agent_chat", r.rect.center());
+                if r.changed() {
+                    app.agent_chat.open = open;
+                    app.preferences.agent_chat_minimized &= !open;
+                }
+            }
         });
     });
     let clicked_out = ui.input(|i| i.pointer.any_pressed())
