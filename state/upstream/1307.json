@@ -1,0 +1,226 @@
+{
+ "comments": [
+  {
+   "author": {
+    "login": "bherbruck"
+   },
+   "authorAssociation": "OWNER",
+   "body": "Thanks for this. CI on the latest commit is running now. Before I can review it properly I need a description: what was slow, the case you measured, and the times before and after. As with #1309, the tests you added in `vendor/truck-meshalgo` don't run, because `vendor/` isn't in the workspace and the crate's own tests don't build alone. Please cover the change with a test in `crates/` (the kernel's collision checks are a good place).",
+   "createdAt": "2026-10-15T06:30:11Z",
+   "id": "IC_kwDOU_9jPs8AAAABcLbFjg",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [],
+   "url": "https://github.com/bherbruck/solidcraft/pull/1307#issuecomment-6185993614",
+   "viewerDidAuthor": false
+  },
+  {
+   "author": {
+    "login": "Ian-cmd-ops"
+   },
+   "authorAssociation": "NONE",
+   "body": "Thanks. The description is filled in with what was slow, the case measured, and the times (751 s to 318 s). The equivalence check now runs in CI as crates/kernel/tests/mesh_collision_equivalence.rs.",
+   "createdAt": "2026-10-15T19:24:20Z",
+   "id": "IC_kwDOU_9jPs8AAAABcZNfdw",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [],
+   "url": "https://github.com/bherbruck/solidcraft/pull/1307#issuecomment-6200450935",
+   "viewerDidAuthor": true
+  }
+ ],
+ "headRefName": "perf/mesh-collision",
+ "headRefOid": "0007c5b33efd5499ef203fb6f65ef3a16628fa58",
+ "mergeable": "MERGEABLE",
+ "mergedAt": null,
+ "number": 1307,
+ "reviews": [],
+ "state": "OPEN",
+ "statusCheckRollup": [
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T16:58:25Z",
+   "conclusion": "SKIPPED",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38727459024/job/116554855350",
+   "name": "Dependency advisories",
+   "startedAt": "2026-10-15T16:58:26Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T16:58:41Z",
+   "conclusion": "SUCCESS",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38727459024/job/116554852747",
+   "name": "Select checks",
+   "startedAt": "2026-10-15T16:58:29Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T16:59:50Z",
+   "conclusion": "SUCCESS",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38727459024/job/116554853121",
+   "name": "Format and repository checks",
+   "startedAt": "2026-10-15T16:58:29Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T16:58:25Z",
+   "conclusion": "SKIPPED",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38727459024/job/116554854854",
+   "name": "Compile WebAssembly (manual)",
+   "startedAt": "2026-10-15T16:58:26Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T16:58:25Z",
+   "conclusion": "SKIPPED",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38727459024/job/116554857554",
+   "name": "Compile RISC-V (manual)",
+   "startedAt": "2026-10-15T16:58:26Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T17:00:00Z",
+   "conclusion": "SUCCESS",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38727459024/job/116554978249",
+   "name": "Native Linux Clippy",
+   "startedAt": "2026-10-15T16:58:56Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T17:08:31Z",
+   "conclusion": "SUCCESS",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38727459024/job/116554978174",
+   "name": "Build tests",
+   "startedAt": "2026-10-15T16:58:45Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T17:03:06Z",
+   "conclusion": "SUCCESS",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38727459024/job/116554977936",
+   "name": "Doc tests",
+   "startedAt": "2026-10-15T16:58:45Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T17:09:27Z",
+   "conclusion": "SUCCESS",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38727459024/job/116554978309",
+   "name": "Reference tests",
+   "startedAt": "2026-10-15T16:58:46Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T17:04:34Z",
+   "conclusion": "SUCCESS",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38727459024/job/116554977924",
+   "name": "Windows D3D12 FXC shaders",
+   "startedAt": "2026-10-15T16:58:50Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T17:05:27Z",
+   "conclusion": "SUCCESS",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38727459024/job/116554977837",
+   "name": "Windows app startup",
+   "startedAt": "2026-10-15T16:58:45Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T17:27:35Z",
+   "conclusion": "SUCCESS",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38727459024/job/116559682791",
+   "name": "Native Linux tests (1/4)",
+   "startedAt": "2026-10-15T17:09:31Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T17:22:52Z",
+   "conclusion": "SUCCESS",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38727459024/job/116559682876",
+   "name": "Native Linux tests (2/4)",
+   "startedAt": "2026-10-15T17:10:00Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T17:23:03Z",
+   "conclusion": "SUCCESS",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38727459024/job/116559682949",
+   "name": "Native Linux tests (3/4)",
+   "startedAt": "2026-10-15T17:10:12Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T17:15:56Z",
+   "conclusion": "SUCCESS",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38727459024/job/116559682785",
+   "name": "Native Linux tests (4/4)",
+   "startedAt": "2026-10-15T17:09:03Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T17:08:32Z",
+   "conclusion": "SKIPPED",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38727459024/job/116559685422",
+   "name": "Action matrix (${{ matrix.shard }}/16)",
+   "startedAt": "2026-10-15T17:08:32Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T17:08:32Z",
+   "conclusion": "SKIPPED",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38727459024/job/116559685786",
+   "name": "Action matrix determinism",
+   "startedAt": "2026-10-15T17:08:32Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T17:27:41Z",
+   "conclusion": "SUCCESS",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38727459024/job/116568851933",
+   "name": "ci",
+   "startedAt": "2026-10-15T17:27:38Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  }
+ ],
+ "title": "Perf/mesh collision",
+ "updatedAt": "2026-10-15T19:24:20Z",
+ "url": "https://github.com/bherbruck/solidcraft/pull/1307"
+}

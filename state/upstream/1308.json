@@ -1,0 +1,241 @@
+{
+ "comments": [
+  {
+   "author": {
+    "login": "bherbruck"
+   },
+   "authorAssociation": "OWNER",
+   "body": "Thanks, property tests for the booleans are welcome. A few things:\n\n- Format and repository checks fail: adding `proptest` changed the dependencies, so `THIRD-PARTY-LICENSES.txt` needs regenerating (`cargo xtask licences`, then commit the file).\n- The nightly job in `ci.yml` is a separate decision from the tests. Please split it into its own PR, so this one is just the tests.\n- Please fill in the description: what the properties assert, and how long the default case counts take on the PR shards.",
+   "createdAt": "2026-10-15T06:30:12Z",
+   "id": "IC_kwDOU_9jPs8AAAABcLbGqw",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [],
+   "url": "https://github.com/bherbruck/solidcraft/pull/1308#issuecomment-6185993899",
+   "viewerDidAuthor": false
+  },
+  {
+   "author": {
+    "login": "bherbruck"
+   },
+   "authorAssociation": "OWNER",
+   "body": "Thanks for splitting the nightly job out and regenerating the licences, @Ian-cmd-ops. That leaves the description: it's still the empty template. Could you fill it in with what each property and contract test asserts, and how long the default case counts take? Since pull requests skip both files, CI here doesn't run them, so I'm running them locally before I merge, and the committed `proptest-regressions` seed (box/box with a=[0,2.5,30], b=[22.5,7.5,15]) is worth a line too: is that a case the kernel failed and now passes, or one that still fails?",
+   "createdAt": "2026-10-15T16:29:47Z",
+   "id": "IC_kwDOU_9jPs8AAAABcV9dyA",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [],
+   "url": "https://github.com/bherbruck/solidcraft/pull/1308#issuecomment-6197042632",
+   "viewerDidAuthor": false
+  },
+  {
+   "author": {
+    "login": "Ian-cmd-ops"
+   },
+   "authorAssociation": "NONE",
+   "body": "@bherbruck Thanks. The description is filled in now. The saved seed is a case the test got wrong, not the kernel. Those two boxes touch only along an edge line, so union is refused on purpose (\u201czero-thickness edge contact\u201d). Intersect (empty) and cut (562.5 mm\u00b3) match the closed form. The first version of box_box_exact expected a union volume there. It now accepts an error for edge-only contact, but never a wrong volume, and the seed passes. I kept the seed committed so every run checks that case first. The defaults took 159 s (boolean_props) and 802 s (atomic_commands) on 2 cores, measured on 0872eb95. Most of atomic_commands is fuzz seed 0.",
+   "createdAt": "2026-10-15T18:06:28Z",
+   "id": "IC_kwDOU_9jPs8AAAABcXvwSA",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [],
+   "url": "https://github.com/bherbruck/solidcraft/pull/1308#issuecomment-6198915144",
+   "viewerDidAuthor": true
+  }
+ ],
+ "headRefName": "tests/properties",
+ "headRefOid": "e8e89d467b7c6f77b52d70f3476c5d3473f1e3dc",
+ "mergeable": "MERGEABLE",
+ "mergedAt": null,
+ "number": 1308,
+ "reviews": [],
+ "state": "OPEN",
+ "statusCheckRollup": [
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T19:17:09Z",
+   "conclusion": "SKIPPED",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38792591489/job/116620835001",
+   "name": "Dependency advisories",
+   "startedAt": "2026-10-15T19:17:09Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T19:17:23Z",
+   "conclusion": "SUCCESS",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38792591489/job/116620832938",
+   "name": "Select checks",
+   "startedAt": "2026-10-15T19:17:13Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T19:18:28Z",
+   "conclusion": "SUCCESS",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38792591489/job/116620833151",
+   "name": "Format and repository checks",
+   "startedAt": "2026-10-15T19:17:12Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T19:17:09Z",
+   "conclusion": "SKIPPED",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38792591489/job/116620835474",
+   "name": "Compile WebAssembly (manual)",
+   "startedAt": "2026-10-15T19:17:09Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T19:17:09Z",
+   "conclusion": "SKIPPED",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38792591489/job/116620835649",
+   "name": "Compile RISC-V (manual)",
+   "startedAt": "2026-10-15T19:17:09Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T19:18:42Z",
+   "conclusion": "SUCCESS",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38792591489/job/116620942022",
+   "name": "Native Linux Clippy",
+   "startedAt": "2026-10-15T19:17:26Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T19:27:34Z",
+   "conclusion": "SUCCESS",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38792591489/job/116620942038",
+   "name": "Build tests",
+   "startedAt": "2026-10-15T19:17:26Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T19:21:20Z",
+   "conclusion": "SUCCESS",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38792591489/job/116620941931",
+   "name": "Doc tests",
+   "startedAt": "2026-10-15T19:17:26Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T19:28:10Z",
+   "conclusion": "SUCCESS",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38792591489/job/116620942200",
+   "name": "Reference tests",
+   "startedAt": "2026-10-15T19:17:26Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T19:22:28Z",
+   "conclusion": "SUCCESS",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38792591489/job/116620942081",
+   "name": "Windows D3D12 FXC shaders",
+   "startedAt": "2026-10-15T19:17:26Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T19:25:29Z",
+   "conclusion": "SUCCESS",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38792591489/job/116620942260",
+   "name": "Windows app startup",
+   "startedAt": "2026-10-15T19:17:26Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T19:42:11Z",
+   "conclusion": "SUCCESS",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38792591489/job/116625748878",
+   "name": "Native Linux tests (1/4)",
+   "startedAt": "2026-10-15T19:27:38Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T19:37:21Z",
+   "conclusion": "SUCCESS",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38792591489/job/116625748796",
+   "name": "Native Linux tests (2/4)",
+   "startedAt": "2026-10-15T19:27:38Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T19:41:40Z",
+   "conclusion": "SUCCESS",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38792591489/job/116625748763",
+   "name": "Native Linux tests (3/4)",
+   "startedAt": "2026-10-15T19:27:37Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T19:50:04Z",
+   "conclusion": "SUCCESS",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38792591489/job/116625748553",
+   "name": "Native Linux tests (4/4)",
+   "startedAt": "2026-10-15T19:27:38Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T19:27:34Z",
+   "conclusion": "SKIPPED",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38792591489/job/116625750729",
+   "name": "Action matrix (${{ matrix.shard }}/16)",
+   "startedAt": "2026-10-15T19:27:35Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T19:27:34Z",
+   "conclusion": "SKIPPED",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38792591489/job/116625751475",
+   "name": "Action matrix determinism",
+   "startedAt": "2026-10-15T19:27:35Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  },
+  {
+   "__typename": "CheckRun",
+   "completedAt": "2026-10-15T19:50:10Z",
+   "conclusion": "SUCCESS",
+   "detailsUrl": "https://github.com/bherbruck/solidcraft/actions/runs/38792591489/job/116636184458",
+   "name": "ci",
+   "startedAt": "2026-10-15T19:50:07Z",
+   "status": "COMPLETED",
+   "workflowName": "CI"
+  }
+ ],
+ "title": "Tests/properties",
+ "updatedAt": "2026-10-15T19:24:06Z",
+ "url": "https://github.com/bherbruck/solidcraft/pull/1308"
+}

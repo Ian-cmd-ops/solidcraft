@@ -1,0 +1,14 @@
+{
+ "comments": [],
+ "headRefName": "fix/step-merged-face-surface",
+ "headRefOid": "5c376029dba5196f126dff0f708fc9abf71518c3",
+ "mergeable": "CONFLICTING",
+ "mergedAt": null,
+ "number": 1497,
+ "reviews": [],
+ "state": "OPEN",
+ "statusCheckRollup": [],
+ "title": "STEP export: a merged partial cylinder keeps its cylinder (silent volume loss)",
+ "updatedAt": "2026-10-15T18:57:31Z",
+ "url": "https://github.com/bherbruck/solidcraft/pull/1497"
+}

@@ -1,0 +1,14 @@
+{
+ "comments": [],
+ "headRefName": "ci/property-tests-nightly",
+ "headRefOid": "e8b59fe2ed7d17da1803d7ee14bf8dc3bea39676",
+ "mergeable": "CONFLICTING",
+ "mergedAt": null,
+ "number": 1498,
+ "reviews": [],
+ "state": "OPEN",
+ "statusCheckRollup": [],
+ "title": "ci: nightly property tests with more cases",
+ "updatedAt": "2026-10-15T18:57:36Z",
+ "url": "https://github.com/bherbruck/solidcraft/pull/1498"
+}

@@ -1,0 +1,14 @@
+{
+ "comments": [],
+ "headRefName": "fix/step-export-scaled-revolution",
+ "headRefOid": "63e1319494b6453db0683a592da7b27da68b50e6",
+ "mergeable": "MERGEABLE",
+ "mergedAt": null,
+ "number": 1496,
+ "reviews": [],
+ "state": "OPEN",
+ "statusCheckRollup": [],
+ "title": "STEP export: shelled revolved bodies export instead of panicking",
+ "updatedAt": "2026-10-15T18:57:33Z",
+ "url": "https://github.com/bherbruck/solidcraft/pull/1496"
+}

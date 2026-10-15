@@ -1,0 +1,75 @@
+{
+ "comments": [
+  {
+   "author": {
+    "login": "bherbruck"
+   },
+   "authorAssociation": "OWNER",
+   "body": "Thanks, splitting a saddle corner around the ring of faces is a nice approach. It conflicts with main in `tests/robustness/goldens.json` (the notes), so CI hasn't run. Could you merge main, re-record with `ROBUSTNESS_GOLDENS_BLESS`, and fill in the description? Two questions for it:\n- In the mixed case the new corners skip the 'inside every other moved plane' check. What keeps a corner from landing outside the shell there?\n- Seed 83 ends with two shells after its later steps. Is that expected? The 0.2 to 0.6 volume band in the test is loose; the analytic shell volume for that box-on-box would pin it down.\nThe ignored seed 6 test would fit better in an issue than in a skipped test.",
+   "createdAt": "2026-10-15T06:30:13Z",
+   "id": "IC_kwDOU_9jPs8AAAABcLbHnA",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [],
+   "url": "https://github.com/bherbruck/solidcraft/pull/1316#issuecomment-6185994140",
+   "viewerDidAuthor": false
+  },
+  {
+   "author": {
+    "login": "bherbruck"
+   },
+   "authorAssociation": "OWNER",
+   "body": "Thanks for the exact volumes and the explanation in the code, that answers both of my questions. The one thing left is the description: it's still the template. Could you fill in what changed, the validation you ran (with the measured values), and a before/after of a shelled saddle corner? I'll merge once that's in.",
+   "createdAt": "2026-10-15T16:29:15Z",
+   "id": "IC_kwDOU_9jPs8AAAABcV81RA",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [],
+   "url": "https://github.com/bherbruck/solidcraft/pull/1316#issuecomment-6197032260",
+   "viewerDidAuthor": false
+  },
+  {
+   "author": {
+    "login": "Ian-cmd-ops"
+   },
+   "authorAssociation": "NONE",
+   "body": "Thanks. The description is filled in now, with the measured values and a before/after of the shelled saddle corner. Main moved again, and goldens.json conflicted in the notes a third time. I merged main, kept main\u2019s seed 57 note and this PR\u2019s seed 83 note, and checked robustness_goldens::all_3 on the merge: seed 83 is unchanged. Seed 6 is now issue #1494. The strip the open face cuts next to a concave edge is fixed separately in #1495.",
+   "createdAt": "2026-10-15T19:06:20Z",
+   "id": "IC_kwDOU_9jPs8AAAABcY4zWA",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [],
+   "url": "https://github.com/bherbruck/solidcraft/pull/1316#issuecomment-6200111960",
+   "viewerDidAuthor": true
+  },
+  {
+   "author": {
+    "login": "Ian-cmd-ops"
+   },
+   "authorAssociation": "NONE",
+   "body": "The description and the before/after pictures are in now. I merged main again (b36b163) to clear the goldens notes conflict, and robustness_goldens::all_3 passed on the merge. The CI run for that commit is waiting for approval (action_required), so could you approve it when you have a moment? The new PRs #1495 to #1498 are probably waiting the same way.",
+   "createdAt": "2026-10-15T21:04:03Z",
+   "id": "IC_kwDOU_9jPs8AAAABca6fdw",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [],
+   "url": "https://github.com/bherbruck/solidcraft/pull/1316#issuecomment-6202236791",
+   "viewerDidAuthor": true
+  }
+ ],
+ "headRefName": "fix/shell-saddle-corners",
+ "headRefOid": "b36b1632dbc43fe923207057532bfa25742db5bc",
+ "mergeable": "MERGEABLE",
+ "mergedAt": null,
+ "number": 1316,
+ "reviews": [],
+ "state": "OPEN",
+ "statusCheckRollup": [],
+ "title": "Fix/shell saddle corners",
+ "updatedAt": "2026-10-15T21:04:03Z",
+ "url": "https://github.com/bherbruck/solidcraft/pull/1316"
+}

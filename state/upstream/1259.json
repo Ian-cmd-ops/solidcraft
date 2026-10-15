@@ -1,0 +1,24 @@
+{
+ "comments": [
+  {
+   "author": {
+    "login": "bherbruck"
+   },
+   "authorAssociation": "OWNER",
+   "body": "Thanks for trying it. The refusal is expected for now. Convert Mesh only rebuilds closed constant-section parts, where one profile is extruded straight, and it takes up to 50,000 triangles. A 169,000-triangle car body is freeform, so it would be refused at any size. Turning a freeform mesh into smooth surfaces is a different problem, and I'm not planning to take it on soon. #63 tracks how far the conversion will go. Closing this one as not planned. If you have a prismatic part that fails, please open a new issue with the mesh attached.",
+   "createdAt": "2026-10-15T12:53:05Z",
+   "id": "IC_kwDOU_9jPs8AAAABcRpS8w",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [],
+   "url": "https://github.com/bherbruck/solidcraft/issues/1259#issuecomment-6192517875",
+   "viewerDidAuthor": false
+  }
+ ],
+ "number": 1259,
+ "state": "CLOSED",
+ "title": "CONVERT MESH: operation failed",
+ "updatedAt": "2026-10-15T12:53:07Z",
+ "url": "https://github.com/bherbruck/solidcraft/issues/1259"
+}

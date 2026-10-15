@@ -1,0 +1,14 @@
+{
+ "comments": [],
+ "headRefName": "fix/shell-open-face-concave-edge",
+ "headRefOid": "b07b1af586201190d1af8b2db4edc48822624448",
+ "mergeable": "MERGEABLE",
+ "mergedAt": null,
+ "number": 1495,
+ "reviews": [],
+ "state": "OPEN",
+ "statusCheckRollup": [],
+ "title": "Shell: an open face next to a concave edge no longer cuts the wall past it",
+ "updatedAt": "2026-10-15T18:57:26Z",
+ "url": "https://github.com/bherbruck/solidcraft/pull/1495"
+}
