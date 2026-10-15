@@ -60,7 +60,7 @@ setup
 printf 'See {{NOPE}}.\n' > "$T/kit/a.md"
 printf 'pr\tPR_A\tfeat/a\tmain\tFix A\ta.md\n' > "$T/kit/actions.tsv"
 bash "$TOOL" "$T/kit" >/dev/null 2>&1; rc=$?
-[ $rc -ne 0 ] && ! grep -q create "$T/log" && ok "unknown placeholder refused up front" || bad "unknown placeholder refused up front"
+[ $rc -ne 0 ] && ! grep -q create "$T/log" 2>/dev/null && ok "unknown placeholder refused up front" || bad "unknown placeholder refused up front"
 
 # 4. Leftover #NNNN, a session link or a generated-by footer stops the run.
 for junk in 'see #NNNN' 'https://claude.ai/code/session_x' 'Generated with [Claude Code](x)'; do
@@ -68,7 +68,7 @@ for junk in 'see #NNNN' 'https://claude.ai/code/session_x' 'Generated with [Clau
   printf '%s\n' "$junk" > "$T/kit/a.md"
   printf 'pr\tPR_A\tfeat/a\tmain\tFix A\ta.md\n' > "$T/kit/actions.tsv"
   bash "$TOOL" "$T/kit" >/dev/null 2>&1; rc=$?
-  [ $rc -ne 0 ] && ! grep -q create "$T/log" && ok "refuses: $junk" || bad "refuses: $junk"
+  [ $rc -ne 0 ] && ! grep -q create "$T/log" 2>/dev/null && ok "refuses: $junk" || bad "refuses: $junk"
 done
 
 # 5. The wrong gh account stops the run.
