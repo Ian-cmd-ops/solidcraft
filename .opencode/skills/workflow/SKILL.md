@@ -1,11 +1,11 @@
 ---
-name: solidcraft
+name: solidcraft-workflow
 description: Quick reference for fixing SolidCraft (Rust CAD) bugs test-first and posting PR kits to bherbruck/solidcraft
 mode: skill
 triggers: solidcraft,robustness seed,goldens,post kit,bherbruck
 ---
 
-# solidcraft
+# solidcraft-workflow
 
 > Load this skill when: working on SolidCraft code, its robustness seeds or goldens,
 > or posting a run's kit to bherbruck/solidcraft.

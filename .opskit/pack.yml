@@ -6,9 +6,9 @@ description: SolidCraft contributor subagent and methodology for test-first fixe
 data_classification: public
 sync: symlink
 agents:
-  - path: agents/solidcraft-dev.md
+  - path: agents/dev.md
 skills:
-  - path: .opencode/skills/solidcraft
+  - path: .opencode/skills/workflow
 docs:
   - docs/standards.md
   - docs/repo-facts.md

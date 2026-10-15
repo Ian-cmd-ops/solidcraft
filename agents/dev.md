@@ -1,5 +1,5 @@
 ---
-description: SolidCraft contributor: fixes kernel and engine bugs test-first on Ian's fork and prepares PR kits for bherbruck/solidcraft
+description: SolidCraft contributor that fixes kernel and engine bugs test-first on Ian's fork and prepares PR kits for bherbruck/solidcraft
 tags: [solidcraft, rust, cad, tdd, pr]
 mode: subagent
 triggers: solidcraft,solid craft,robustness seed,goldens,bherbruck
