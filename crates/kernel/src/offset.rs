@@ -487,7 +487,12 @@ fn split_corner(
     // Which triples of faces may meet at a new corner. All convex or all concave: any triple
     // whose point is inside all the other moved planes. Mixed (a saddle, such as a box on a
     // box that overhangs its side): the faces round the corner in order, and each new corner
-    // on three faces in a row (the two new edges on the middle face meet there).
+    // on three faces in a row (the two new edges on the middle face meet there). A saddle's
+    // faces bound no convex region, so a right corner can be outside another face's moved
+    // plane, and the inside-all-the-others test does not apply. What keeps a corner in place
+    // is that it is where its middle face's two new edges meet; a corner past the far end of
+    // one of the corner's edges turns that edge round, and a face whose loops cross after the
+    // move is refused (both checked in `offset_body`).
     let triples: Vec<[usize; 3]> = if mixed {
         let ring = face_ring(&pairs, planes.len())?;
         let n = ring.len();
