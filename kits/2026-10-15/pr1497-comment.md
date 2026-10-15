@@ -1,0 +1,1 @@
+Current main (#1438) also fixes seed 17, so I merged main, dropped `gap_middle`, and kept only the two seed 17 regression tests. The kernel test fails on main before #1438 and passes on current main. The description is updated. If you prefer to close this PR because #1438 covers it, that is fine with me.
