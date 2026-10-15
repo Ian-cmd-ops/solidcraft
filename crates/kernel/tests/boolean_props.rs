@@ -5,8 +5,8 @@
 //! that case into a normal `#[test]` as a regression test.
 //!
 //! Case count: `PROPTEST_CASES` (default 8). Pull requests skip this file (.config/nextest.toml);
-//! pushes to main run it, and the nightly `property-tests` job uses a high count. A long local
-//! run: `PROPTEST_CASES=2000 cargo test -p solidcraft-kernel --test boolean_props`.
+//! pushes to main run it. A long local run:
+//! `PROPTEST_CASES=2000 cargo test -p solidcraft-kernel --test boolean_props`.
 //! proptest saves every failing seed in `tests/boolean_props.proptest-regressions`. Commit it.
 
 use proptest::prelude::*;
