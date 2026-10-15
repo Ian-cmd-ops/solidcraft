@@ -31,10 +31,10 @@ fn replay(seed: u64, cmds: &[(String, serde_json::Value)]) -> (Session, Vec<Stri
     let mut broken = Vec::new();
     for (i, (id, p)) in cmds.iter().enumerate() {
         let before: Document = (*s.doc).clone();
-        if let Err(e) = s.execute(id, p) {
-            if *s.doc != before {
-                broken.push(format!("seed {seed} cmd {i} `{id}` failed ({e}) but changed the design"));
-            }
+        if let Err(e) = s.execute(id, p)
+            && *s.doc != before
+        {
+            broken.push(format!("seed {seed} cmd {i} `{id}` failed ({e}) but changed the design"));
         }
     }
     (s, broken)
