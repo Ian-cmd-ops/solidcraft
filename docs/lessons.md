@@ -43,3 +43,11 @@ Things that went wrong or cost time before. Add a line when a run learns somethi
   before claiming "goldens unchanged". After a notes-only merge, the part holding the PR's seeds is enough.
 - Put a time limit on each seed in a loop (`timeout`), so one slow seed cannot stall the run.
 - Print a progress line per seed or per step. Never run silent for more than a few minutes.
+
+## Kit and opskit member
+
+- **A colon in a YAML header value breaks the whole file.** Replacing an em dash with ": " in an
+  agent description made `opskit member sync-mount` crash. `opskit-aware.py check` did not catch it.
+  Run `bash tests/test_member.sh` after any change to `agents/`, `.opencode/` or `.opskit/`.
+- **opskit prefixes member renders with the member name.** A file `agents/dev.md` in member
+  `solidcraft` renders as `@solidcraft-dev`. Name files so the result reads well.
