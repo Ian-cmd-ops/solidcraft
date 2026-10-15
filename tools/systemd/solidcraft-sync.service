@@ -1,0 +1,10 @@
+[Unit]
+Description=Record SolidCraft owner comments and CI state into the kit (read-only on GitHub)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 %h/Projects/solidcraft-kit/tools/sync_upstream.py %h/Projects/solidcraft-kit
+TimeoutStartSec=10min
+NoNewPrivileges=true

@@ -1,0 +1,66 @@
+---
+# Installs the solidcraft-sync user timer for one user on the opskit host.
+# Copy into environments/<env>/playbooks/ in opskit and run with bin/ap.sh.
+# Needs on the target: git, python3, gh logged in as Ian-cmd-ops for that user,
+# and `gh auth setup-git` so git can push the ops branch over HTTPS.
+- name: SolidCraft upstream sync timer
+  hosts: "{{ sync_host | default('opskit') }}"
+  gather_facts: false
+  vars:
+    sync_user: ian
+    kit_dir: "/home/{{ sync_user }}/Projects/solidcraft-kit"
+    kit_repo: https://github.com/Ian-cmd-ops/solidcraft
+    unit_src: "{{ kit_dir }}/tools/systemd"
+    unit_dst: "/home/{{ sync_user }}/.config/systemd/user"
+  tasks:
+    - name: Look up the user's ID for the user systemd instance
+      ansible.builtin.getent:
+        database: passwd
+        key: "{{ sync_user }}"
+
+    - name: Kit checkout exists on the ops branch
+      become: true
+      become_user: "{{ sync_user }}"
+      ansible.builtin.git:
+        repo: "{{ kit_repo }}"
+        dest: "{{ kit_dir }}"
+        version: ops
+        single_branch: true
+        update: false
+
+    - name: User unit directory exists
+      become: true
+      become_user: "{{ sync_user }}"
+      ansible.builtin.file:
+        path: "{{ unit_dst }}"
+        state: directory
+        mode: "0755"
+
+    - name: Units are linked from the kit, so a git pull updates them
+      become: true
+      become_user: "{{ sync_user }}"
+      ansible.builtin.file:
+        src: "{{ unit_src }}/{{ item }}"
+        dest: "{{ unit_dst }}/{{ item }}"
+        state: link
+      loop:
+        - solidcraft-sync.service
+        - solidcraft-sync.timer
+
+    - name: User services keep running after logout
+      become: true
+      ansible.builtin.command: "loginctl enable-linger {{ sync_user }}"
+      args:
+        creates: "/var/lib/systemd/linger/{{ sync_user }}"
+
+    - name: Timer is enabled and running
+      become: true
+      become_user: "{{ sync_user }}"
+      environment:
+        XDG_RUNTIME_DIR: "/run/user/{{ getent_passwd[sync_user][1] }}"
+      ansible.builtin.systemd_service:
+        name: solidcraft-sync.timer
+        scope: user
+        daemon_reload: true
+        enabled: true
+        state: started
