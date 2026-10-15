@@ -208,10 +208,11 @@ def build_cases():
               "note": "SolidCraft's own STL of a 25-hole plate, converted back to faces"})
     c.append({"name": "mesh_plate400_over_cap", "kind": "meshtrip", "script": PLATE, "expect": "refuse",
               "note": "the 400-hole plate's STL is over mesh.convert's 50 000-triangle cap: a clean refusal"})
-    # GPU: 4K renders of heavy models. A machine without a usable GPU may refuse; that is reported, not a failure.
-    c.append({"name": "gpu_snapshot_plate_4k", "kind": "snapshot", "script": PLATE, "expect": "image",
+    # 4K renders of heavy models. solidcraft-cli snapshot draws with the CPU rasterizer in crates/render
+    # (the CLI does not link crates/gpu), so these measure CPU rendering. GPU use needs the desktop app.
+    c.append({"name": "cpu_render_plate_4k", "kind": "snapshot", "script": PLATE, "expect": "image",
               "note": "400-hole plate rendered at 3840x2160"})
-    c.append({"name": "gpu_snapshot_torus_1M_4k", "kind": "snapshot", "tris": None, "expect": "image",
+    c.append({"name": "cpu_render_torus_1M_4k", "kind": "snapshot", "tris": None, "expect": "image",
               "note": "1M-triangle mesh rendered at 3840x2160"})
     for k, s in SEEDS.items():
         c.append(script_case(f"known_{k}", s, "known", note="robustness seed, boolean Cut: no result"))
