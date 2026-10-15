@@ -1,0 +1,16 @@
+{
+ "as_of": "2026-10-15T19:40:00Z",
+ "upstream_main": "b56648c",
+ "items": {
+  "1307": {"kind": "pr", "branch": "perf/mesh-collision", "head": "0007c5b3", "state": "open", "comments": 2, "updated_at": "2026-10-15T19:24:20Z"},
+  "1308": {"kind": "pr", "branch": "tests/properties", "head": "e8e89d46", "state": "open", "comments": 3, "updated_at": "2026-10-15T19:24:06Z"},
+  "1309": {"kind": "pr", "branch": "perf/tess-include", "head": "ac3ef6f5", "state": "open", "comments": 2, "updated_at": "2026-10-15T19:24:19Z"},
+  "1316": {"kind": "pr", "branch": "fix/shell-saddle-corners", "head": "b36b1632", "state": "open", "comments": 3, "updated_at": "2026-10-15T19:08:25Z"},
+  "1494": {"kind": "issue", "state": "open", "comments": 0, "updated_at": "2026-10-15T18:57:24Z"},
+  "1495": {"kind": "pr", "branch": "fix/shell-open-face-concave-edge", "head": "b07b1af5", "state": "open", "comments": 0, "updated_at": "2026-10-15T18:57:26Z"},
+  "1496": {"kind": "pr", "branch": "fix/step-export-scaled-revolution", "head": "63e13194", "state": "open", "comments": 0, "updated_at": "2026-10-15T18:57:33Z"},
+  "1497": {"kind": "pr", "branch": "fix/step-merged-face-surface", "head": "5c376029", "state": "open", "comments": 0, "updated_at": "2026-10-15T18:57:31Z"},
+  "1498": {"kind": "pr", "branch": "ci/property-tests-nightly", "head": "e8b59fe2", "state": "open", "comments": 0, "updated_at": "2026-10-15T18:57:36Z"}
+ },
+ "other_fork_branches": {"all-fixes": "9bb5a1ab (local combined branch of every fix; not a PR)"}
+}
