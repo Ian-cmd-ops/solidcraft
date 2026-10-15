@@ -304,8 +304,12 @@ fn collide_triangles_test() {
 
 /// The candidate search before boxes were computed once and the open list stopped being
 /// cloned: kept to check the new search finds the same collisions in the same order.
-#[cfg(test)]
-mod same_as_before {
+///
+/// Not part of the API. Built only for tests, or with the `test-hooks` feature, so the
+/// SolidCraft kernel tests can run these checks in CI (this crate's own tests do not run there).
+#[cfg(any(test, feature = "test-hooks"))]
+#[doc(hidden)]
+pub mod test_hooks {
     use super::*;
 
     fn old_pairs(sort_endpoints: Vec<EndPoint>) -> Vec<(usize, usize)> {
@@ -320,8 +324,9 @@ mod same_as_before {
                     }
                 }
                 EndPointType::Back => {
-                    let i = current[segnum].iter().position(|idx| *idx == index).unwrap();
-                    current[segnum].swap_remove(i);
+                    if let Some(i) = current[segnum].iter().position(|idx| *idx == index) {
+                        current[segnum].swap_remove(i);
+                    }
                 }
             }
         }
@@ -334,7 +339,7 @@ mod same_as_before {
         disjoint_boxes(&b0, &b1)
     }
 
-    /// Small seeded generator (no extra test dependency).
+    /// Small seeded generator (no extra dependency).
     struct Lcg(u64);
     impl Lcg {
         fn unit(&mut self) -> f64 {
@@ -351,9 +356,8 @@ mod same_as_before {
         }
     }
 
-    /// A NaN coordinate breaks the endpoint sort: the search goes on without a panic.
-    #[test]
-    fn nan_triangles_do_not_panic() {
+    /// A NaN coordinate breaks the endpoint sort: the search must go on without a panic.
+    pub fn nan_triangles_do_not_panic() -> Result<(), String> {
         let good = [Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.0, 0.0), Point3::new(0.0, 1.0, 0.0)];
         let nan = [Point3::new(f64::NAN, 0.0, 0.0), Point3::new(1.0, f64::NAN, 0.0), Point3::new(0.0, 1.0, 0.5)];
         let crossing = [Point3::new(0.2, 0.2, -1.0), Point3::new(0.2, 0.2, 1.0), Point3::new(0.6, 0.2, 0.0)];
@@ -361,13 +365,18 @@ mod same_as_before {
             let ba: Vec<_> = a.iter().map(|t| (*t, t.iter().collect())).collect();
             let bb: Vec<_> = b.iter().map(|t| (*t, t.iter().collect())).collect();
             let r = std::panic::catch_unwind(|| candidate_pairs(&ba, &bb, Vector3::new(1.0, 0.0, 0.0)));
-            assert!(r.is_ok(), "panicked on {a:?} / {b:?}");
+            if r.is_err() {
+                return Err(format!("panicked on {a:?} / {b:?}"));
+            }
         }
+        Ok(())
     }
 
-    #[test]
-    fn same_collisions_in_the_same_order() {
-        for seed in 0..200u64 {
+    /// The new candidate search finds the same collisions, in the same order, as the old one
+    /// on random triangle sets. Returns how many collisions were compared.
+    pub fn same_collisions_in_the_same_order(seeds: std::ops::Range<u64>) -> Result<usize, String> {
+        let mut compared = 0;
+        for seed in seeds {
             let mut r = Lcg(seed * 7919 + 1);
             let n0 = 1 + (r.unit() * 60.0) as usize;
             let n1 = 1 + (r.unit() * 60.0) as usize;
@@ -388,10 +397,24 @@ mod same_as_before {
                 .filter_map(|(i, j)| collide_triangles(t0[i], t1[j]))
                 .collect();
 
-            assert_eq!(old.len(), new.len(), "seed {seed}: count");
-            for (k, (a, b)) in old.iter().zip(&new).enumerate() {
-                assert!(a.0 == b.0 && a.1 == b.1, "seed {seed}: collision {k} differs: {a:?} vs {b:?}");
+            if old.len() != new.len() {
+                return Err(format!("seed {seed}: {} collisions before, {} now", old.len(), new.len()));
             }
+            for (k, (a, b)) in old.iter().zip(&new).enumerate() {
+                if !(a.0 == b.0 && a.1 == b.1) {
+                    return Err(format!("seed {seed}: collision {k} differs: {a:?} vs {b:?}"));
+                }
+            }
+            compared += old.len();
         }
+        Ok(compared)
+    }
+
+    #[cfg(test)]
+    #[test]
+    fn hooks_pass() {
+        assert_eq!(nan_triangles_do_not_panic(), Ok(()));
+        let n = same_collisions_in_the_same_order(0..200);
+        assert!(matches!(n, Ok(n) if n > 0), "{n:?}");
     }
 }
