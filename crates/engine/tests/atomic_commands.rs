@@ -8,7 +8,8 @@
 //! The designs come from the engine's own fuzzer (`fuzz::run`), so these tests cover every
 //! command it can generate: sketches, extrudes, revolves, holes, patterns, fillets, shells.
 //!
-//! Seeds: `ATOMIC_SEEDS` (default 0..4, kept small for PR CI). Nightly: `ATOMIC_SEEDS=0..500`.
+//! Seeds: `ATOMIC_SEEDS` (default 0..4). Pull requests skip this file (.config/nextest.toml); pushes
+//! to main run it, and the nightly `property-tests` job uses more seeds.
 
 use solidcraft_doc::Document;
 use solidcraft_engine::{Session, fuzz};

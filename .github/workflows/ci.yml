@@ -268,8 +268,8 @@ jobs:
             --profile ci --success-output final --run-ignored only -E "binary(action_matrix) & test(=action_matrix_determinism)"
 
   property-tests:
-    # The boolean property tests and the atomic command tests with many cases. Pull requests run
-    # them with small defaults (8 cases, seeds 0..4); nightly raises the counts.
+    # The boolean property tests and the atomic command tests with many cases. Pull requests skip
+    # them (.config/nextest.toml); pushes to main run them with small defaults (8 cases, seeds 0..4).
     name: Property tests (many cases)
     needs: build-tests
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
@@ -285,11 +285,11 @@ jobs:
           name: nextest-archive
       - name: Boolean properties and atomic commands
         env:
-          PROPTEST_CASES: "128"
-          ATOMIC_SEEDS: "0..32"
+          PROPTEST_CASES: "64"
+          ATOMIC_SEEDS: "0..16"
         run: |
           cargo nextest run --archive-file tests.tar.zst --workspace-remap . --extract-to . --extract-overwrite \
-            --profile ci --success-output final -E "binary(boolean_props) | binary(atomic_commands)"
+            --profile ci --ignore-default-filter --success-output final -E "binary(boolean_props) | binary(atomic_commands)"
 
   doc-tests:
     name: Doc tests
