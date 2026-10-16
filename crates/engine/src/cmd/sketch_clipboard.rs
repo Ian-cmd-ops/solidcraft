@@ -208,19 +208,13 @@ fn copy(s: &mut Session, p: &Value) -> Result<Value> {
     Ok(out)
 }
 
-/// A copy of the parameters that keys can be set on: serde_json panics when a key is set on a
-/// value that is not an object, and parameters come from outside (#1536).
-fn object_copy(cmd: &str, p: &Value) -> Result<Value> {
-    match p {
-        Value::Object(_) => Ok(p.clone()),
-        Value::Null => Ok(json!({})),
-        _ => Err(bad(cmd, "the parameters must be a JSON object")),
-    }
-}
-
 fn cut(s: &mut Session, p: &Value) -> Result<Value> {
-    let mut q = object_copy("sketch.cut", p)?;
+    // `q["entities"] = …` below panics on anything but an object.
+    if !(p.is_object() || p.is_null()) {
+        return Err(bad("sketch.cut", "params must be an object"));
+    }
     let entities = chosen(s, p);
+    let mut q = if p.is_null() { json!({}) } else { p.clone() };
     q["entities"] = json!(entities);
     let out = copy(s, &q)?;
     let delete = super::find_command("sketch.delete").ok_or_else(|| bad("sketch.cut", "sketch.delete is missing"))?;
@@ -263,7 +257,7 @@ fn paste(s: &mut Session, p: &Value) -> Result<Value> {
     if !(t.x.is_finite() && t.y.is_finite()) {
         return Err(bad(cmd, "the paste position must be finite"));
     }
-    let mut p = object_copy(cmd, p)?;
+    let mut p = p.clone();
     p["sketch"] = json!(target);
     let ((curves, lone, constraints), info) = edit(s, &p, cmd, false, |sk, doc| {
         if sk.curves.len().saturating_add(clip.curves.len()) > solidcraft_sketch::MAX_CURVES {
