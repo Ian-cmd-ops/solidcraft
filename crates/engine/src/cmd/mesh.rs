@@ -15,6 +15,7 @@ use crate::{
 
 pub static COMMANDS: &[CommandSpec] = &[
     CommandSpec::new("mesh.convert", "Convert Mesh", convert)
+        .at("MESH", "PREPARE")
         .icon("import")
         .params("body: mesh body name; tolerance?: length expression (default 0.05 mm): reconstruct a closed constant-section mechanical mesh as editable planar and cylindrical faces, with a parametric timeline feature; name?"),
 ];

@@ -129,6 +129,10 @@ pub enum Kind {
     Scale {
         factor: String,
     },
+    /// Rebuild a mesh body as editable faces.
+    MeshConvert {
+        tolerance: String,
+    },
     /// Move planar faces along their normals.
     OffsetFaces {
         distance: String,
@@ -526,6 +530,7 @@ impl Dialog {
                 Dialog::new(Kind::Split, vec![SelInput::new("Body to split", BODIES, false), SelInput::new("Splitting tool", PLANES | FACES, false)])
             }
             "solid.scale" => Dialog::new(Kind::Scale { factor: "2".into() }, vec![SelInput::new("Bodies", BODIES, true)]),
+            "mesh.convert" => Dialog::new(Kind::MeshConvert { tolerance: "0.05 mm".into() }, vec![SelInput::new("Mesh body", BODIES, false)]),
             "solid.offset_face" => Dialog::new(Kind::OffsetFaces { distance: "2 mm".into() }, vec![SelInput::new("Faces", PLANAR_FACES, true)]),
             "solid.thread" => {
                 Dialog::new(Kind::Thread { designation: String::new(), length: String::new() }, vec![SelInput::new("Cylindrical face", FACES, false)])
@@ -808,6 +813,7 @@ impl Dialog {
             Kind::Stock { margin } => ("Margin", ValueKind::Length, margin),
             Kind::AnglePlane { angle } => ("Angle", ValueKind::Angle, angle),
             Kind::Scale { factor } => ("Scale", ValueKind::Unitless, factor),
+            Kind::MeshConvert { tolerance } => ("Tolerance", ValueKind::Length, tolerance),
             Kind::OffsetFaces { distance } => ("Distance", ValueKind::Length, distance),
             Kind::Sheet(k) => return k.primary(&self.inputs),
             Kind::Surface(k) => return k.primary(),
@@ -1359,6 +1365,7 @@ fn title(k: &Kind) -> &'static str {
         Kind::AnglePlane { .. } => "PLANE AT ANGLE",
         Kind::Split => "SPLIT BODY",
         Kind::Scale { .. } => "SCALE",
+        Kind::MeshConvert { .. } => "CONVERT MESH",
         Kind::OffsetFaces { .. } => "OFFSET FACE",
         Kind::Thread { .. } => "THREAD",
         Kind::Section { .. } => "SECTION ANALYSIS",
@@ -2675,6 +2682,11 @@ pub fn show(app: &mut SolveApp, ctx: &egui::Context) {
                         enter |= field(ui, factor);
                         ui.end_row();
                     }
+                    Kind::MeshConvert { tolerance } => {
+                        row_label(ui, "Tolerance");
+                        enter |= field(ui, tolerance);
+                        ui.end_row();
+                    }
                     Kind::OffsetFaces { distance } => {
                         row_label(ui, "Distance");
                         enter |= field(ui, distance);
@@ -3892,6 +3904,11 @@ fn dialog_commands(app: &SolveApp, d: &Dialog) -> Result<Vec<(String, Value)>, S
                 _ => return Err("pick a plane or a face".into()),
             };
             ("solid.split_body", p)
+        }
+        Kind::MeshConvert { tolerance } => {
+            need(0, "a mesh body")?;
+            let body = body_names(0).into_iter().next().unwrap_or_default();
+            ("mesh.convert", json!({"body": body, "tolerance": tolerance}))
         }
         Kind::Scale { factor } => {
             need(0, "bodies")?;
