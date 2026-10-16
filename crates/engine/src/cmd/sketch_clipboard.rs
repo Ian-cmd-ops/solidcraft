@@ -219,8 +219,12 @@ fn object_copy(cmd: &str, p: &Value) -> Result<Value> {
 }
 
 fn cut(s: &mut Session, p: &Value) -> Result<Value> {
-    let mut q = object_copy("sketch.cut", p)?;
+    // `q["entities"] = …` below panics on anything but an object.
+    if !(p.is_object() || p.is_null()) {
+        return Err(bad("sketch.cut", "params must be an object"));
+    }
     let entities = chosen(s, p);
+    let mut q = if p.is_null() { json!({}) } else { p.clone() };
     q["entities"] = json!(entities);
     let out = copy(s, &q)?;
     let delete = super::find_command("sketch.delete").ok_or_else(|| bad("sketch.cut", "sketch.delete is missing"))?;
