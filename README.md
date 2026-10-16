@@ -57,7 +57,7 @@ The scheduled run does not need either; it works in the cloud.
 
 ## The CT 115 sync job
 
-The cloud run cannot read comments on bherbruck/solidcraft. CT 115 can, because `gh` there is
+The cloud run cannot read comments on tangency-labs/solidcraft. CT 115 can, because `gh` there is
 logged in as Ian-cmd-ops. `tools/sync_upstream.py` writes the owner's exact comments and the CI
 state to `state/upstream/` and pushes `ops`. It only reads GitHub. It runs at 08:20 and 18:20 Pacific.
 

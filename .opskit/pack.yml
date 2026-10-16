@@ -2,7 +2,7 @@
 # Mount from CT 115: see README.md "Mount in opskit".
 contract: 1
 name: solidcraft
-description: SolidCraft contributor subagent and methodology for test-first fixes and PR kits to bherbruck/solidcraft.
+description: SolidCraft contributor subagent and methodology for test-first fixes and PR kits to tangency-labs/solidcraft.
 data_classification: public
 sync: symlink
 agents:

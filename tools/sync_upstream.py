@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Record what the owner said on Ian's SolidCraft PRs and issues, word for word.
 
-The cloud run cannot read comments on bherbruck/solidcraft (the API answers 403).
+The cloud run cannot read comments on tangency-labs/solidcraft (the API answers 403).
 This job runs where `gh` is logged in as Ian-cmd-ops (CT 115), writes the exact
 comments and CI state into the kit, and pushes the ops branch. It only reads
 GitHub; it never posts there.
@@ -11,7 +11,7 @@ Writes into <kit>/state/upstream/:
   SUMMARY.md      one line per item: state, mergeable, failing checks, last owner comment
 
 Usage: sync_upstream.py <kit-dir> [--no-push]
-Env:   REPO (default bherbruck/solidcraft), AUTHOR and EXPECT_LOGIN (default Ian-cmd-ops),
+Env:   REPO (default tangency-labs/solidcraft), AUTHOR and EXPECT_LOGIN (default Ian-cmd-ops),
        OWNER (default bherbruck), RECENT_DAYS (default 14)
 Run time: about 2 seconds per item, plus one pull and one push. One line per step.
 """
@@ -23,7 +23,7 @@ import sys
 import time
 from pathlib import Path
 
-REPO = os.environ.get("REPO", "bherbruck/solidcraft")
+REPO = os.environ.get("REPO", "tangency-labs/solidcraft")
 AUTHOR = os.environ.get("AUTHOR", "Ian-cmd-ops")
 LOGIN = os.environ.get("EXPECT_LOGIN", "Ian-cmd-ops")
 OWNER = os.environ.get("OWNER", "bherbruck")

@@ -2,7 +2,7 @@
 """Post one run's kit to GitHub with YOUR gh login.
 
 A kit is a folder with:
-  repo          one line, e.g. bherbruck/solidcraft (default if missing)
+  repo          one line, e.g. tangency-labs/solidcraft (default if missing)
   actions.tsv   one action per line, tab-separated, in posting order
   *.md          the bodies the actions name
 
@@ -123,7 +123,7 @@ def main():
         die(__doc__.strip().splitlines()[0] + "\nUsage: post_kit.py <kit-dir> [--dry-run]")
     kit = Path(sys.argv[1]).resolve()
     dry = "--dry-run" in sys.argv[2:]
-    repo = (kit / "repo").read_text().strip() if (kit / "repo").is_file() else "bherbruck/solidcraft"
+    repo = (kit / "repo").read_text().strip() if (kit / "repo").is_file() else "tangency-labs/solidcraft"
     login = os.environ.get("EXPECT_LOGIN", "Ian-cmd-ops")
     acts = parse(kit)
     validate(acts)

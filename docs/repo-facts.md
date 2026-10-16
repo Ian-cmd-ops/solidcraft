@@ -1,13 +1,13 @@
 # SolidCraft repo facts
 
-Facts a run needs about bherbruck/solidcraft. Each fact was checked on 2026-10-15
+Facts a run needs about tangency-labs/solidcraft. Each fact was checked on 2026-10-15
 against upstream main `b6806b1`. Re-check a fact before you rely on it in a PR.
 
 ## Repositories and identity
 
 | Item | Value |
 |---|---|
-| Upstream | `https://github.com/bherbruck/solidcraft` (branch `main`) |
+| Upstream | `https://github.com/tangency-labs/solidcraft` (branch `main`) |
 | Fork | `https://github.com/Ian-cmd-ops/solidcraft` |
 | Kit and run state | branch `ops` on the fork (this branch) |
 | Commit author | `Ian-cmd-ops <78785932+Ian-cmd-ops@users.noreply.github.com>` |

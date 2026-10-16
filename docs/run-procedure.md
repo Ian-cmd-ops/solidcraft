@@ -9,7 +9,7 @@ Spend the rest finishing, checking, and writing the kit and report.
 
 ## Hard rules
 
-- **Never post to `bherbruck/solidcraft`.** No PRs, issues, comments, edits or reviews. Ian posts the kit.
+- **Never post to `tangency-labs/solidcraft`.** No PRs, issues, comments, edits or reviews. Ian posts the kit.
 - **Never force-push** a branch that has an open PR, and never rewrite the `ops` branch history.
 - **Never delete** a branch, a comment or a file Ian made.
 - **Never touch the homelab**, CT 115 or any device. This work is code only.

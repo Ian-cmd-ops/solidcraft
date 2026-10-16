@@ -1,6 +1,6 @@
 ---
 name: solidcraft-workflow
-description: Quick reference for fixing SolidCraft (Rust CAD) bugs test-first and posting PR kits to bherbruck/solidcraft
+description: Quick reference for fixing SolidCraft (Rust CAD) bugs test-first and posting PR kits to tangency-labs/solidcraft
 mode: skill
 triggers: solidcraft,robustness seed,goldens,post kit,bherbruck
 ---
@@ -8,7 +8,7 @@ triggers: solidcraft,robustness seed,goldens,post kit,bherbruck
 # solidcraft-workflow
 
 > Load this skill when: working on SolidCraft code, its robustness seeds or goldens,
-> or posting a run's kit to bherbruck/solidcraft.
+> or posting a run's kit to tangency-labs/solidcraft.
 
 ## Quick Reference
 
@@ -32,7 +32,7 @@ triggers: solidcraft,robustness seed,goldens,post kit,bherbruck
 
 ## Do NOT
 
-- Do NOT post to bherbruck/solidcraft from an agent. Ian posts the kit.
+- Do NOT post to tangency-labs/solidcraft from an agent. Ian posts the kit.
 - Do NOT write `#NNNN`. Use `{{VAR}}` placeholders in kits.
 - Do NOT run the full `cargo xtask ci` on 2 cores. List it under "Not run".
 - Do NOT claim a check you have not finished.
