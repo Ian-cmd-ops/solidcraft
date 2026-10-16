@@ -1004,6 +1004,22 @@ mod tests {
         assert_eq!(s.visibility, before);
     }
 
+    /// A design file can carry any id, the largest a `u64` holds too: a new group then has no id
+    /// to take. That is an error, not an overflow (a panic where overflow is checked, a duplicate
+    /// id where it is not).
+    #[test]
+    fn a_new_group_after_the_largest_id_is_an_error_not_an_overflow() {
+        let mut s = Session::default();
+        run(&mut s, "solid.box", json!({"length": 10, "width": 10, "height": 10}));
+        let a = names(&s)[0].clone();
+        run(&mut s, "browser.group", json!({"folder": "bodies", "items": [a.clone()]}));
+        s.doc_mut().browser_groups[0].id = u64::MAX;
+        let result = s.execute("browser.group", &json!({"folder": "bodies", "items": [a]}));
+        assert!(!matches!(result, Err(crate::EngineError::Internal(..))), "panicked inside the command: {result:?}");
+        assert!(result.is_err(), "no id is left to give: {result:?}");
+        assert_eq!(s.doc.browser_groups.len(), 1, "nothing was added");
+    }
+
     #[test]
     fn groups_hold_items_and_follow_renames() {
         let mut s = Session::default();
