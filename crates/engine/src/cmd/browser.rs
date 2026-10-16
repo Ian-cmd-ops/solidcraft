@@ -87,7 +87,7 @@ fn group(s: &mut Session, p: &Value) -> Result<Value> {
     let component = component_of(s, p, cmd)?;
     let items = keys(p, "items", cmd)?;
     let d = s.doc_mut();
-    let id = d.browser_groups.iter().map(|g| g.id).max().unwrap_or(0) + 1;
+    let id = super::next_free_id(cmd, d.browser_groups.iter().map(|g| g.id))?;
     let name = match str_(p, "name").map(str::trim).filter(|n| !n.is_empty()) {
         Some(n) if n.len() <= 128 => n.to_string(),
         Some(_) => return Err(bad(cmd, "`name` is too long")),
@@ -1018,6 +1018,15 @@ mod tests {
         assert!(!matches!(result, Err(crate::EngineError::Internal(..))), "panicked inside the command: {result:?}");
         assert!(result.is_err(), "no id is left to give: {result:?}");
         assert_eq!(s.doc.browser_groups.len(), 1, "nothing was added");
+    }
+
+    #[test]
+    fn the_next_free_id_is_one_past_the_largest_and_never_wraps() {
+        use super::super::next_free_id;
+        assert_eq!(next_free_id("t", std::iter::empty()).unwrap(), 1);
+        assert_eq!(next_free_id("t", [3, 9, 4].into_iter()).unwrap(), 10);
+        assert_eq!(next_free_id("t", [u64::MAX - 1].into_iter()).unwrap(), u64::MAX);
+        assert!(next_free_id("t", [1, u64::MAX].into_iter()).is_err());
     }
 
     #[test]
