@@ -342,6 +342,9 @@ class Sampler(threading.Thread):
                 self.gpu_mem = max(self.gpu_mem or 0, m)
             elif self.amd:
                 self.gpu_util = max(self.gpu_util or 0, float(self.amd.read_text().strip()))
+                vram = self.amd.parent / "mem_info_vram_used"
+                if vram.exists():
+                    self.gpu_mem = max(self.gpu_mem or 0, round(int(vram.read_text().strip()) / 2**20, 1))
         except (OSError, ValueError, subprocess.SubprocessError):
             pass
 
