@@ -601,7 +601,12 @@ fn boolean_whole(a: &Body, b: &Body, op: BoolOp) -> Result<Option<Body>> {
     // do span the bodies, so the step is set again from where they meet and the meshes are
     // remade once, when that is a much finer step.
     let refined = match &meshes {
-        (Some(ma), Some(mb)) => Some((size * 5e-4).min(mesh_meeting_size(ma, mb) * 2e-3).max(size * 1e-5)),
+        // A meeting box only a few steps thick is the tessellation error of bodies that merely
+        // touch or miss each other: a finer mesh there cannot help and only slows the operation.
+        (Some(ma), Some(mb)) => {
+            let meet = mesh_meeting_size(ma, mb);
+            (meet > tol_m * 8.0).then(|| (size * 5e-4).min(meet * 2e-3).max(size * 1e-5))
+        }
         _ => None,
     };
     if let Some(refined) = refined
