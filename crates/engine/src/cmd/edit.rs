@@ -12,11 +12,11 @@ use crate::{EngineError, Result, Sel, Session, Snapshot};
 pub static COMMANDS: &[CommandSpec] = &[
     CommandSpec::new("edit.undo", "Undo", undo).icon("undo").key("Ctrl+Z").noundo().doc_only(),
     CommandSpec::new("edit.redo", "Redo", redo).icon("redo").key("Ctrl+Y").noundo().doc_only(),
-    CommandSpec::new("edit.checkpoint", "Checkpoint", checkpoint)
+    CommandSpec::new("edit.checkpoint", "Checkpoint", checkpoint).icon("checkpoint")
         .noundo()
         .doc_only()
         .params("→ {checkpoint: id}: remember the design, active sketch and undo history (restore with edit.restore_checkpoint)"),
-    CommandSpec::new("edit.restore_checkpoint", "Restore Checkpoint", restore_checkpoint)
+    CommandSpec::new("edit.restore_checkpoint", "Restore Checkpoint", restore_checkpoint).icon("restore")
         .noundo()
         .doc_only()
         .params("checkpoint: id; forget?: bool (true = drop it without going back). Goes back to it, undo history included"),
@@ -26,48 +26,48 @@ pub static COMMANDS: &[CommandSpec] = &[
         .icon("delete")
         .key("Delete")
         .params("features: [id or name] (a sketch takes its dependent features with it) → deleted: [ids]; failing?: [{feature, error}] (later features that worked and now fail)"),
-    CommandSpec::new("timeline.rename", "Rename", rename).params("feature: id|name, name (references to it follow)"),
+    CommandSpec::new("timeline.rename", "Rename", rename).icon("rename").params("feature: id|name, name (references to it follow)"),
     CommandSpec::new("timeline.group", "New Feature Folder", group)
         .icon("folder")
         .doc_only()
         .params("name?; features?: [id|name]; parent?: folder id (features leave any other timeline folder)"),
-    CommandSpec::new("timeline.ungroup", "Remove Feature Folders", ungroup)
+    CommandSpec::new("timeline.ungroup", "Remove Feature Folders", ungroup).icon("folder")
         .doc_only()
         .params("group: id | groups: [ids] (features remain in the timeline)"),
-    CommandSpec::new("timeline.rename_group", "Rename Feature Folder", rename_group).doc_only().params("group: id, name"),
-    CommandSpec::new("timeline.move_to_group", "Move Features to Folder", move_to_group)
+    CommandSpec::new("timeline.rename_group", "Rename Feature Folder", rename_group).icon("rename").doc_only().params("group: id, name"),
+    CommandSpec::new("timeline.move_to_group", "Move Features to Folder", move_to_group).icon("folder")
         .doc_only()
         .params("features?: [id|name], groups?: [ids], group?: id (omit or null to move to the timeline root)"),
-    CommandSpec::new("timeline.move_many", "Move Timeline Items", move_many).params(
+    CommandSpec::new("timeline.move_many", "Move Timeline Items", move_many).icon("reorder").params(
         "features?: [id|name], groups?: [folder ids], group?: folder id, position: insertion slot; atomically changes folder membership and moves all selected contents as one block",
     ),
-    CommandSpec::new("timeline.rollback", "Move Timeline Marker", rollback).params("position: number of features to keep active (omit = end)"),
-    CommandSpec::new("timeline.roll_to", "Roll History Marker", rollback)
+    CommandSpec::new("timeline.rollback", "Move Timeline Marker", rollback).icon("rollback").params("position: number of features to keep active (omit = end)"),
+    CommandSpec::new("timeline.roll_to", "Roll History Marker", rollback).icon("rollback")
         .params("position: number of features to keep active (omit = end) | feature: id|name (the marker goes right after it)"),
-    CommandSpec::new("timeline.reorder", "Reorder Feature", reorder)
+    CommandSpec::new("timeline.reorder", "Reorder Feature", reorder).icon("reorder")
         .params("feature: id|name, position: its new index; refused when a feature that worked would fail"),
-    CommandSpec::new("timeline.reorder_many", "Reorder Features", reorder_many).params(
+    CommandSpec::new("timeline.reorder_many", "Reorder Features", reorder_many).icon("reorder").params(
         "features: [id|name], position: insertion slot in the current history; selected features keep their relative order; refused when a feature that worked would fail",
     ),
-    CommandSpec::new("timeline.redefine", "Edit Feature", redefine)
+    CommandSpec::new("timeline.redefine", "Edit Feature", redefine).icon("edit")
         .params("feature: id|name, command: the feature's command id, params: its parameters (the feature is rebuilt in place)"),
-    CommandSpec::new("timeline.dependents", "Feature Dependents", dependents)
+    CommandSpec::new("timeline.dependents", "Feature Dependents", dependents).icon("graph")
         .noundo()
         .params("feature: id|name → features deleted with it, and features that would fail without it"),
-    CommandSpec::new("timeline.suppress", "Suppress Feature", suppress).params("feature: id|name, suppressed?: bool (default toggles)"),
-    CommandSpec::new("timeline.edit", "Edit Feature", edit_feature).params(
+    CommandSpec::new("timeline.suppress", "Suppress Feature", suppress).icon("suppress").params("feature: id|name, suppressed?: bool (default toggles)"),
+    CommandSpec::new("timeline.edit", "Edit Feature", edit_feature).icon("edit").params(
         "feature: id|name, set: {fields to change, merged into the feature's definition as timeline.inspect returns it, \
          e.g. {\"extent\": {\"distance\": \"30\"}} (extrude), {\"angle\": \"90 deg\"} (revolve); \
          expressions are text} → recomputed: features rebuilt, restored: features whose earlier result for the same inputs was reused",
     ),
-    CommandSpec::new("timeline.inspect", "Inspect Feature", inspect_feature).noundo().params(
+    CommandSpec::new("timeline.inspect", "Inspect Feature", inspect_feature).icon("inspect").noundo().params(
         "feature: id|name → type, definition (the fields timeline.edit's set changes, with their current values), \
          inputs: [{label, param, expression, unit}] (named inputs parameters.change can also set), error, warning",
     ),
-    CommandSpec::new("select.set", "Select", select_set)
+    CommandSpec::new("select.set", "Select", select_set).icon("select")
         .noundo()
         .params("items: [{type: body|edge|face|feature|sketch_curve|sketch_point|profile, …}], add?: bool"),
-    CommandSpec::new("select.clear", "Clear Selection", select_clear).noundo(),
+    CommandSpec::new("select.clear", "Clear Selection", select_clear).icon("select").noundo(),
 ];
 
 fn undo(s: &mut Session, _p: &Value) -> Result<Value> {
@@ -767,7 +767,7 @@ fn edit_feature(s: &mut Session, p: &Value) -> Result<Value> {
         return Err(bad(cmd, unknown_field_message(&field, &before, f.kind.type_name())));
     }
     if let FeatureKind::BodyTransfer { bodies, from, to, transform } = &nf.kind {
-        solidcraft_doc::validate_body_transfer(&s.doc, bodies, *from, *to, transform)?;
+        solidcraft_doc::validate_body_transfer(&s.doc, &solidcraft_doc::plain(bodies), *from, *to, transform)?;
         nf.component = *to;
     }
     if let (FeatureKind::Sketch { sketch: a, .. }, FeatureKind::Sketch { sketch: b, .. }) = (&nf.kind, &f.kind)
@@ -783,22 +783,22 @@ fn edit_feature(s: &mut Session, p: &Value) -> Result<Value> {
         && a != b
     {
         let before = s.model.state_before(id);
-        nf.edge_refs = solidcraft_doc::edge_refs(&before, body, a);
-        nf.edge_names = solidcraft_doc::edge_names_for(&before, body, a);
+        nf.edge_refs = solidcraft_doc::edge_refs(&before, body, &solidcraft_doc::plain(a));
+        nf.edge_names = solidcraft_doc::edge_names_for(&before, body, &solidcraft_doc::plain(a));
     }
     // New or reordered flange edges: their names now, so each edge's own angle and height stay
     // with the edge they were given for.
     if let (FeatureKind::SheetFlange { edges: a, .. }, FeatureKind::SheetFlange { edges: b, .. }) = (&nf.kind, &f.kind) {
         let points = |e: &[solidcraft_doc::FlangeEdge]| e.iter().map(|x| x.point).collect::<Vec<_>>();
         if points(a) != points(b) {
-            nf.edge_names = solidcraft_doc::sheet::sheet_edge_names(&s.model.state_before(id), &points(a));
+            nf.edge_names = solidcraft_doc::sheet::sheet_edge_names(&s.model.state_before(id), &solidcraft_doc::plain(&points(a)));
         }
     }
     // New bend edges for a conversion: the names of the body's edges there now.
     if let (FeatureKind::SheetConvert { bends: a, body, .. }, FeatureKind::SheetConvert { bends: b, body: was, .. }) = (&nf.kind, &f.kind)
         && (a != b || body != was)
     {
-        nf.edge_names = solidcraft_doc::sheet::bend_edge_names(&s.model.state_before(id), body, a);
+        nf.edge_names = solidcraft_doc::sheet::bend_edge_names(&s.model.state_before(id), body, &solidcraft_doc::plain(a));
     }
     // Profiles picked by index or point are kept by their curves, as when the feature was made.
     if nf.kind.clone().profile_sels_mut() != f.kind.clone().profile_sels_mut() {
@@ -1045,7 +1045,7 @@ fn redefine(s: &mut Session, p: &Value) -> Result<Value> {
         && before.body == after.body
         && before.path == after.path
         && before.author_path == after.author_path
-        && before.at.dist(after.at) < 1e-8
+        && before.at.dist(after.at.0) < 1e-8
     {
         *after = before.clone();
     }
