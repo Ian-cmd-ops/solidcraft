@@ -3,6 +3,7 @@
 //! Rust workspace tooling. External tools (`cargo`, and Python 3.11+ for the
 //! original icon collection) are invoked through `std::process::Command`.
 
+mod agent_docs;
 mod app_icons;
 mod assets;
 mod book;
