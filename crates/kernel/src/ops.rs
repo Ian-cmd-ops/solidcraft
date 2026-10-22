@@ -1153,15 +1153,6 @@ fn mesh_meeting_size(a: &solidcraft_geom::Mesh, b: &solidcraft_geom::Mesh) -> f6
     if s.x > 0.0 && s.y > 0.0 && s.z > 0.0 { s.x.min(s.y).min(s.z) } else { f64::INFINITY }
 }
 
-/// Smallest side of the box where the bounds of two meshes overlap (infinite when they don't).
-/// Unlike [`meeting_size`], this follows curved faces: a cylinder's vertices are only the points
-/// on its seam, so its vertex box says nothing about where its side reaches.
-fn mesh_meeting_size(a: &solidcraft_geom::Mesh, b: &solidcraft_geom::Mesh) -> f64 {
-    let (ba, bb) = (a.bounds(), b.bounds());
-    let s = solidcraft_geom::Aabb3 { min: ba.min.max(bb.min), max: ba.max.min(bb.max) }.size();
-    if s.x > 0.0 && s.y > 0.0 && s.z > 0.0 { s.x.min(s.y).min(s.z) } else { f64::INFINITY }
-}
-
 /// Whether a result volume is plausible for `op`: within the bounds the operands' volumes
 /// leave, plus the slack the meshed volumes are measured to.
 fn plausible(v: f64, op: BoolOp, va: f64, vb: f64, slack: f64) -> bool {
