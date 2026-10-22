@@ -199,7 +199,8 @@ fn point_tool_click_on_a_line_midpoint_keeps_the_midpoint_constraint() {
     assert_eq!(midpoint_ids(&h).len(), 1, "the click on the Mid snap holds the point at the middle");
     assert_eq!(point_count(&h), points + 1, "one new point");
     assert_eq!(h.app.session.undo.len(), undo + 1, "one undo step");
-    // A click away from any snap is still a plain, free point.
+    // A click away from any snap is still a plain, free point. The tool ends after one point.
+    h.step(&json!({"start":"sketch.point"})).unwrap();
     h.step(&json!({"move":{"sketch":[50, 50]}})).unwrap();
     h.step(&json!({"click":{"sketch":[50, 50]}})).unwrap();
     assert_eq!(midpoint_ids(&h).len(), 1, "a free click adds no midpoint constraint");
