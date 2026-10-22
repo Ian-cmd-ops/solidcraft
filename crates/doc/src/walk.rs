@@ -53,6 +53,7 @@ impl Walk for crate::document::FilletFit {}
 impl Walk for crate::document::FilletCorner {}
 impl Walk for crate::document::MeshData {}
 impl Walk for crate::document::RevolveConvention {}
+impl Walk for crate::document::RailFit {}
 impl Walk for crate::document::CoilSection {}
 impl Walk for crate::document::ThinSide {}
 impl Walk for crate::document::ExtendMode {}
@@ -331,6 +332,9 @@ impl Walk for PlaneRef {
                     p = base;
                 }
                 PlaneRef::AlongPath { t, .. } => return f(("Distance (0 to 1)", t, Kind::Unitless, ExprRole::Input)),
+                // A plane seen from behind keeps its base's expressions (a sketch made with
+                // `flip` on an offset plane did not follow the offset's parameter).
+                PlaneRef::Flipped { base, .. } => p = base,
                 PlaneRef::Placed { origin, .. } => {
                     for (label, e) in ["X", "Y", "Z"].into_iter().zip(origin) {
                         f((label, e, Kind::Length, ExprRole::Placement));
@@ -354,6 +358,9 @@ impl Walk for PlaneRef {
                     p = base;
                 }
                 PlaneRef::AlongPath { t, .. } => return f(("Distance (0 to 1)", t, Kind::Unitless, ExprRole::Input)),
+                // A plane seen from behind keeps its base's expressions (a sketch made with
+                // `flip` on an offset plane did not follow the offset's parameter).
+                PlaneRef::Flipped { base, .. } => p = base,
                 PlaneRef::Placed { origin, .. } => {
                     for (label, e) in ["X", "Y", "Z"].into_iter().zip(origin) {
                         f((label, e, Kind::Length, ExprRole::Placement));

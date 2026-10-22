@@ -6,7 +6,7 @@ use serde_json::{Value, json};
 use solidcraft_doc::Mat;
 use solidcraft_doc::joints::{self, JointKind};
 use solidcraft_doc::motion::{ContactSet, ExplodedView, MotionStudy, StudyKey};
-use solidcraft_geom::Vec3;
+use solidcraft_geom::{Aabb3, Vec3};
 use solidcraft_kernel::Body;
 
 use super::CommandSpec;
@@ -14,10 +14,14 @@ use super::joints::{cannot_move, effective_values, joint_id, occurrence_id, reso
 use crate::params::{bad, bool_, str_, vec3};
 use crate::{EngineError, Result, Session};
 
+#[path = "motion_analysis.rs"]
+mod analysis;
 #[path = "motion_animation.rs"]
 mod animation;
 #[path = "contact_sweep.rs"]
 mod contact_sweep;
+#[path = "motion_sweep.rs"]
+mod sweep;
 
 macro_rules! trace_doc {
     () => {
@@ -28,35 +32,41 @@ macro_rules! trace_doc {
 }
 
 pub static COMMANDS: &[CommandSpec] = &[
-    CommandSpec::new("contact.enable_sets", "Enable Contact Sets", enable_sets).at("SOLID", "ASSEMBLE").icon("joint").params(
+    CommandSpec::new("contact.enable_sets", "Enable Contact Sets", enable_sets).at("SOLID", "ASSEMBLE").icon("contact_sets").params(
         "enabled?: bool (default true) — driving joints and motion studies stop where bodies in one contact set would pass through each other",
     ),
     CommandSpec::new("contact.enable_all", "Enable All Contact", enable_all)
         .at("SOLID", "ASSEMBLE")
-        .icon("joint")
+        .icon("contact_all")
         .params("every occurrence takes part in contact (one set of all)"),
-    CommandSpec::new("contact.disable_all", "Disable Contact", disable_all).at("SOLID", "ASSEMBLE").icon("joint").params("contact off"),
+    CommandSpec::new("contact.disable_all", "Disable Contact", disable_all).at("SOLID", "ASSEMBLE").icon("contact_off").params("contact off"),
     CommandSpec::new("contact.create", "New Contact Set", new_set)
         .at("SOLID", "ASSEMBLE")
-        .icon("joint")
+        .icon("contact_new")
         .params("occurrences: [ids or names] (two or more); name?"),
-    CommandSpec::new("contact.edit", "Edit Contact Set", edit_set).params("set: id|name; occurrences?; name?; suppressed?: bool; delete?: bool"),
-    CommandSpec::new("contact.list", "List Contact Sets", list_sets).noundo().doc_only().params("→ sets, enabled, all"),
-    CommandSpec::new("contact.check", "Check Contact", check).noundo().params("→ pairs in contact sets that pass through each other now"),
-    CommandSpec::new("motion.study", "Motion Study", study).at("SOLID", "ASSEMBLE").icon("joint").params(
+    CommandSpec::new("contact.edit", "Edit Contact Set", edit_set)
+        .icon("edit")
+        .params("set: id|name; occurrences?; name?; suppressed?: bool; delete?: bool"),
+    CommandSpec::new("contact.list", "List Contact Sets", list_sets).icon("list").noundo().doc_only().params("→ sets, enabled, all"),
+    CommandSpec::new("contact.check", "Check Contact", check)
+        .icon("interference")
+        .noundo()
+        .params("→ pairs in contact sets that pass through each other now"),
+    CommandSpec::new("motion.study", "Motion Study", study).at("SOLID", "ASSEMBLE").icon("play").params(
         "name?; study? (edit an existing one); steps? (timeline length, default 100); keys: [{joint, index?, points: [[step, value], …]}] \
          (values: degrees for angles, mm for distances, or expressions)",
     ),
-    CommandSpec::new("motion.play", "Play Motion Study", play).params(
+    CommandSpec::new("motion.play", "Play Motion Study", play).icon("play").params(
         "study: id|name; step (0…steps) — sets the joints to the study's values there (contact sets stop them); quiet?: bool \
          (positions of only the occurrences that moved) → values: [{joint, values: [{name, value, unit}]}], positions, moved: whether \
          any occurrence moved, unmoved: [{joint, name, reason}] (keyed joints that can move nothing, such as a chain joined to \
          nothing grounded)",
     ),
     CommandSpec::new("motion.export", "Export Motion Study", export)
+        .icon("export")
         .noundo()
         .params("study; samples? (default steps + 1); path? (.json or .csv) → occurrence positions per step (the design is not changed)"),
-    CommandSpec::new("motion.export_animation", "Export Motion Animation", animation::export).noundo().params(
+    CommandSpec::new("motion.export_animation", "Export Motion Animation", animation::export).icon("export").noundo().params(
         "study: id|name, or joint: id|name with from and to (degrees for angles, mm for distances, or expressions) and index?;          path: a .gif file, or a folder for PNG frames (frame-0001.png, frame-0002.png, …); samples? (frames, 2…1000; default the          study's steps + 1, or 100); width?, height? (16…4096 pixels, default 800 × 500); camera?: {target, yaw, pitch, roll?,          distance, fov?, up?} (ui.camera's reply; fields left out keep the default view: view.apply's camera, or the home view          framing the model); fps? (1…50, default 20); grid?, axes? (default true: the ground grid and the origin's axes) - draws the study as it plays, or the joint as it is driven, with the headless          renderer → path, format, frames, width, height, fps (GIF), bytes, renderer, stopped_at, stopped_by_loop,          stopped_by_contact (the design is not changed)",
     ),
     CommandSpec::new("motion.trace", "Motion Trace", trace).at("SOLID", "ASSEMBLE").icon("trace").noundo().params(concat!(
@@ -64,30 +74,34 @@ pub static COMMANDS: &[CommandSpec] = &[
         " → points: [[x,y,z]…] world positions, samples (taken), stopped_at (the sample where the motion stopped short; the trace \
          ends there), stopped_by_loop, stopped_by_contact (the design is not changed)"
     )),
-    CommandSpec::new("motion.trace.keep", "Keep Motion Trace", keep_trace).params(concat!(
+    CommandSpec::new("motion.trace.keep", "Keep Motion Trace", keep_trace).icon("trace").params(concat!(
         trace_doc!(),
         "; name? (default Motion TraceN) - keeps the trace as a 3D sketch spline through its points (a new sketch with 3D Sketch \
          on, in the root component, where no joint moves it; a fixed curve, it does not follow later changes) → sketch, name, curves, points"
     )),
-    CommandSpec::new("motion.list", "List Motion Studies", list_studies).noundo(),
-    CommandSpec::new("motion.delete", "Delete Motion Study", delete_study).params("study"),
-    CommandSpec::new("explode.create", "Exploded View", explode_create).at("SOLID", "ASSEMBLE").icon("joint").params(
+    CommandSpec::new("motion.plot", "Plot Motion Study", analysis::plot).icon("graph").noundo().params(analysis::PLOT_DOC),
+    CommandSpec::new("motion.interference", "Motion Interference", analysis::interference).icon("interference").noundo().params(analysis::INTERFERENCE_DOC),
+    CommandSpec::new("joint.sweep", "Sweep Joint", sweep::sweep).icon("interference").params(sweep::SWEEP_DOC),
+    CommandSpec::new("motion.list", "List Motion Studies", list_studies).icon("list").noundo(),
+    CommandSpec::new("motion.delete", "Delete Motion Study", delete_study).icon("delete").params("study"),
+    CommandSpec::new("explode.create", "Exploded View", explode_create).at("SOLID", "ASSEMBLE").icon("explode").params(
         "name?; scale? (automatic: each occurrence pushed away from the assembly's centre by scale × its offset, default 1); \
          moves?: [{occurrence, translate: [x,y,z]}] (instead of automatic)",
     ),
     CommandSpec::new("explode.show", "Show Exploded View", explode_show)
+        .icon("explode")
         .noundo()
         .params("view: id|name (or none: back to the assembled placement) — shown only; the design keeps its placements"),
-    CommandSpec::new("explode.list", "List Exploded Views", explode_list).noundo(),
-    CommandSpec::new("explode.delete", "Delete Exploded View", explode_delete).params("view"),
+    CommandSpec::new("explode.list", "List Exploded Views", explode_list).icon("list").noundo(),
+    CommandSpec::new("explode.delete", "Delete Exploded View", explode_delete).icon("delete").params("view"),
 ];
 
 const MAX_ITEMS: usize = 10_000;
 
-fn next_id(s: &Session) -> u64 {
+fn next_id(s: &Session, cmd: &str) -> Result<u64> {
     let a = &s.doc.assembly;
     let ids = a.contact_sets.iter().map(|c| c.id).chain(a.studies.iter().map(|m| m.id)).chain(a.exploded.iter().map(|e| e.id));
-    ids.max().unwrap_or(0) + 1
+    super::next_free_id(cmd, ids)
 }
 
 fn occurrences(s: &Session, p: &Value, cmd: &str) -> Result<Vec<u64>> {
@@ -165,6 +179,8 @@ pub fn collisions(s: &Session) -> Vec<(String, String, f64)> {
 /// How deep one body reaches into the other, when more than a touch (`None`: apart or
 /// touching). Points of each tessellation (vertices, edge midpoints, triangle centres) are
 /// tested against the other closed mesh: inside by ray parity, and deeper than the tolerance.
+/// Edges are tested for crossing the other's surface too: plates crossing face to face have
+/// no sample point inside (#3323).
 fn overlap(a: &Body, b: &Body) -> Option<f64> {
     let (ma, mb) = (a.tessellate((a.size() * 1e-3).max(1e-3)).ok()?, b.tessellate((b.size() * 1e-3).max(1e-3)).ok()?);
     mesh_overlap(&ma, &mb, 1e-4 * a.size().max(b.size()).max(1.0))
@@ -194,8 +210,10 @@ fn deepest(a: &solidcraft_geom::Mesh, b: &solidcraft_geom::Mesh, tol: f64) -> f6
     let tb = tris(b);
     let bx = b.bounds();
     let mut pts: Vec<Vec3> = a.positions.clone();
+    let mut edges: Vec<(Vec3, Vec3)> = Vec::new();
     for [p, q, r] in tris(a) {
         pts.extend([(p + q) * 0.5, (q + r) * 0.5, (r + p) * 0.5, (p + q + r) * (1.0 / 3.0)]);
+        edges.extend([(p, q), (q, r), (r, p)]);
     }
     let mut best = 0.0f64;
     for p in pts.into_iter().take(200_000) {
@@ -211,6 +229,52 @@ fn deepest(a: &solidcraft_geom::Mesh, b: &solidcraft_geom::Mesh, tol: f64) -> f6
         let d = tb.iter().map(|[a, b, c]| closest(p, *a, *b, *c).dist(p)).fold(f64::MAX, f64::min);
         if d > tol.max(best) && inside(p, &tb) {
             best = d;
+        }
+    }
+    for (p, q) in edges.into_iter().take(200_000) {
+        best = best.max(crossing(p, q, &tb, bx, tol));
+    }
+    best
+}
+
+/// Where the edge `p`→`q` of one mesh reaches through the surface `tb` of the other: the
+/// depth, or 0 when it misses, only touches, or grazes (the middle of the chord it cuts must
+/// lie inside, deeper than `tol`, as elsewhere in the check). Two plates crossing each other's
+/// faces put no vertex, mid-edge or triangle centre of either inside the other — the chord an
+/// edge cuts is how that crossing is seen (#3323).
+fn crossing(p: Vec3, q: Vec3, tb: &[[Vec3; 3]], bx: Aabb3, tol: f64) -> f64 {
+    if p.x.max(q.x) < bx.min.x - tol
+        || p.x.min(q.x) > bx.max.x + tol
+        || p.y.max(q.y) < bx.min.y - tol
+        || p.y.min(q.y) > bx.max.y + tol
+        || p.z.max(q.z) < bx.min.z - tol
+        || p.z.min(q.z) > bx.max.z + tol
+    {
+        return 0.0;
+    }
+    let d = q - p;
+    let len2 = d.dot(d);
+    if len2 <= 0.0 {
+        return 0.0;
+    }
+    // Where the edge crosses the surface, along the edge. A crossing at a vertex or along an
+    // edge shared by two triangles is found twice (or more); merges of neighbours leave the
+    // entry and exit of each chord as one pair each.
+    let mut hits: Vec<f64> = tb.iter().filter_map(|t| contact_sweep::segment_hits_triangle(p, q, t)).map(|h| (h - p).dot(d) / len2).collect();
+    if hits.len() < 2 {
+        return 0.0;
+    }
+    hits.sort_by(|x, y| x.total_cmp(y));
+    hits.dedup_by(|x, y| (*x - *y).abs() < 1e-6);
+    let mut best = 0.0;
+    for pair in hits.chunks(2) {
+        if pair.len() < 2 {
+            break;
+        }
+        let m = p + d * ((pair[0] + pair[1]) * 0.5);
+        let deep = tb.iter().map(|[a, b, c]| closest(m, *a, *b, *c).dist(m)).fold(f64::MAX, f64::min);
+        if deep > tol.max(best) && inside(m, tb) {
+            best = deep;
         }
     }
     best
@@ -413,7 +477,7 @@ fn new_set(s: &mut Session, p: &Value) -> Result<Value> {
     if s.doc.assembly.contact_sets.len() >= MAX_ITEMS {
         return Err(bad(cmd, "too many contact sets"));
     }
-    let id = next_id(s);
+    let id = next_id(s, cmd)?;
     let name = str_(p, "name").map(str::to_string).unwrap_or_else(|| format!("Contact Set{}", s.doc.assembly.contact_sets.len() + 1));
     let a = &mut s.doc_mut().assembly;
     a.contact_sets.push(ContactSet { id, name: name.clone(), occurrences: occ, suppressed: false });
@@ -472,12 +536,15 @@ fn check(s: &mut Session, _p: &Value) -> Result<Value> {
 // ---- Motion studies ----
 
 fn study_index(s: &Session, p: &Value, cmd: &str) -> Result<usize> {
-    let key = match p.get("study") {
-        Some(Value::Number(n)) => n.to_string(),
-        Some(Value::String(x)) => x.clone(),
+    // A number is an id first, text a name first: a study may be named like another's id.
+    let (key, id_first) = match p.get("study") {
+        Some(Value::Number(n)) => (n.to_string(), true),
+        Some(Value::String(x)) => (x.clone(), false),
         _ => return Err(bad(cmd, "`study` must be an id or a name")),
     };
-    s.doc.assembly.studies.iter().position(|m| m.id.to_string() == key || m.name == key).ok_or_else(|| bad(cmd, format!("no motion study `{key}`")))
+    let studies = &s.doc.assembly.studies;
+    let (by_id, by_name) = (studies.iter().position(|m| m.id.to_string() == key), studies.iter().position(|m| m.name == key));
+    if id_first { by_id.or(by_name) } else { by_name.or(by_id) }.ok_or_else(|| bad(cmd, format!("no motion study `{key}`")))
 }
 
 fn study(s: &mut Session, p: &Value) -> Result<Value> {
@@ -518,7 +585,7 @@ fn study(s: &mut Session, p: &Value) -> Result<Value> {
             keys.push(StudyKey { joint, index, points });
         }
     }
-    let id = next_id(s);
+    let id = next_id(s, cmd)?;
     let count = s.doc.assembly.studies.len();
     let a = &mut s.doc_mut().assembly;
     let out = match existing.and_then(|i| a.studies.get_mut(i)) {
@@ -688,13 +755,11 @@ const MAX_TRACE: usize = solidcraft_sketch::MAX_FIT_POINTS;
 /// The joint values a trace drives to at sample `k` of `n`.
 type Plan = Box<dyn Fn(&Session, usize, usize) -> Vec<(u64, Vec<f64>)>>;
 
-/// Where a point of an occurrence goes as a study plays or a joint is driven: its world
-/// positions, sampled on a copy (the design is not changed). Each sample is driven from the one
-/// before, so closed loops follow on their branch and contact sets stop them; the trace ends at
-/// the sample where the motion stops short. Returns the points and the answer without them.
-fn sample_trace(s: &Session, p: &Value, cmd: &str) -> Result<(Vec<Vec3>, Value)> {
-    // The placement traced: an occurrence path through nested sub-assemblies (one instance of
-    // each), or an occurrence at its first placement (none: the root).
+/// The point `p` names (`occurrence` and `point`): the occurrence path placing it and the point
+/// in that placement's frame. The occurrence is an occurrence path through nested sub-assemblies
+/// (one instance of each), or an occurrence at its first placement (none: the root). The point
+/// is a world point where the parts are placed (moves only shown are left out).
+fn traced_point(s: &Session, p: &Value, cmd: &str) -> Result<(Vec<u64>, Vec3)> {
     let path: Vec<u64> = match p.get("occurrence") {
         Some(Value::Array(ids)) if ids.len() <= 64 => {
             ids.iter().map(|v| v.as_u64().ok_or_else(|| bad(cmd, "an occurrence path lists occurrence ids"))).collect::<Result<_>>()?
@@ -710,19 +775,29 @@ fn sample_trace(s: &Session, p: &Value, cmd: &str) -> Result<(Vec<Vec3>, Value)>
     };
     let at = p.get("point").and_then(vec3).filter(|v| v.len() < 1e7).ok_or_else(|| bad(cmd, "`point` must be [x, y, z], a world point"))?;
     let mut t = s.scratch();
+    t.pending_moves.clear();
+    let local = solidcraft_doc::mat_inverse(&path_world(&t, &path, cmd)?)
+        .map(|m| solidcraft_doc::apply_point(&m, at))
+        .ok_or_else(|| bad(cmd, "the occurrence's placement is not invertible"))?;
+    Ok((path, local))
+}
+
+/// The world placement of an occurrence path (empty: the root).
+fn path_world(t: &Session, path: &[u64], cmd: &str) -> Result<Mat> {
+    if path.is_empty() { Ok(solidcraft_doc::IDENTITY) } else { t.occurrence_placement(path).map(|o| o.world).map_err(|e| bad(cmd, e.to_string())) }
+}
+
+/// Where a point of an occurrence goes as a study plays or a joint is driven: its world
+/// positions, sampled on a copy (the design is not changed). Each sample is driven from the one
+/// before, so closed loops follow on their branch and contact sets stop them; the trace ends at
+/// the sample where the motion stops short. Returns the points and the answer without them.
+fn sample_trace(s: &Session, p: &Value, cmd: &str) -> Result<(Vec<Vec3>, Value)> {
+    let (path, local) = traced_point(s, p, cmd)?;
+    let mut t = s.scratch();
     // Traced from where the parts are placed: moves only shown (an exploded view, a move not
     // captured yet) are not where the joints are solved.
     t.pending_moves.clear();
-    let world = |t: &Session| -> Result<Mat> {
-        if path.is_empty() {
-            Ok(solidcraft_doc::IDENTITY)
-        } else {
-            t.occurrence_placement(&path).map(|o| o.world).map_err(|e| bad(cmd, e.to_string()))
-        }
-    };
-    let local = solidcraft_doc::mat_inverse(&world(&t)?)
-        .map(|m| solidcraft_doc::apply_point(&m, at))
-        .ok_or_else(|| bad(cmd, "the occurrence's placement is not invertible"))?;
+    let world = |t: &Session| path_world(t, &path, cmd);
     let (default, given, plan) = motion_plan(s, p, cmd)?;
     let n = sample_count(p, default.min(MAX_TRACE), MAX_TRACE, cmd)?;
     let mut points = Vec::new();
@@ -879,16 +954,14 @@ fn centres(s: &Session) -> Vec<(u64, Vec3)> {
     let bodies = placed(s);
     let mut out = Vec::new();
     for o in s.doc.occurrences.iter().filter(|o| o.parent == 0) {
-        let (mut lo, mut hi) = (Vec3::new(f64::MAX, f64::MAX, f64::MAX), Vec3::new(f64::MIN, f64::MIN, f64::MIN));
+        let mut bounds = Aabb3::EMPTY;
         for (_, b) in bodies.iter().filter(|(path, _)| path.first() == Some(&o.id)) {
             if let Ok(m) = b.tessellate((b.size() * 1e-2).max(1e-2)) {
-                let bb = m.bounds();
-                lo = Vec3::new(lo.x.min(bb.min.x), lo.y.min(bb.min.y), lo.z.min(bb.min.z));
-                hi = Vec3::new(hi.x.max(bb.max.x), hi.y.max(bb.max.y), hi.z.max(bb.max.z));
+                bounds = bounds.union(&m.bounds());
             }
         }
-        if lo.x <= hi.x {
-            out.push((o.id, (lo + hi) * 0.5));
+        if !bounds.is_empty() {
+            out.push((o.id, bounds.center()));
         }
     }
     out
@@ -930,7 +1003,7 @@ fn explode_create(s: &mut Session, p: &Value) -> Result<Value> {
     if s.doc.assembly.exploded.len() >= MAX_ITEMS {
         return Err(bad(cmd, "too many exploded views"));
     }
-    let id = next_id(s);
+    let id = next_id(s, cmd)?;
     let name = str_(p, "name").map(str::to_string).unwrap_or_else(|| format!("Exploded View{}", s.doc.assembly.exploded.len() + 1));
     s.doc_mut().assembly.exploded.push(ExplodedView { id, name: name.clone(), moves: moves.clone() });
     Ok(json!({"view": id, "name": name, "moves": moves.iter().map(|(o, t)| json!({"occurrence": o, "translate": t})).collect::<Vec<_>>()}))

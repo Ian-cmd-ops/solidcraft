@@ -25,12 +25,48 @@ mod native_crash;
 mod native_frame;
 #[cfg(target_os = "macos")]
 mod open_documents;
-#[cfg(any(target_os = "windows", target_os = "linux"))]
+#[cfg(any(target_os = "windows", target_os = "linux", target_os = "macos"))]
 mod space_mouse;
 mod startup;
+#[cfg(any(target_os = "windows", test))]
+mod window_fit;
 
 use solidcraft_engine::{Session, io};
 use solidcraft_ui_egui::{Services, SolveApp};
+
+/// Windows: put the restored window back inside the monitor's work area if it is out of reach
+/// (a gone monitor, another scale, a taskbar edge). Sizes are in points, the work area in pixels.
+#[cfg(target_os = "windows")]
+fn fit_window_to_work_area(ctx: &egui::Context, frame: &eframe::Frame) {
+    use window_fit::Area;
+    let Some((x, y, w, h)) = native_frame::work_area(frame) else { return };
+    let (outer, inner, scale, maximized) = ctx.input(|i| {
+        let v = i.viewport();
+        (v.outer_rect, v.inner_rect, v.native_pixels_per_point, v.maximized.unwrap_or(false) || v.fullscreen.unwrap_or(false))
+    });
+    let (Some(outer), Some(inner), Some(scale)) = (outer, inner, scale.filter(|s| s.is_finite() && *s > 0.0)) else { return };
+    if maximized {
+        return;
+    }
+    let work = Area::new(x as f32 / scale, y as f32 / scale, w as f32 / scale, h as f32 / scale);
+    let now = Area::new(outer.min.x, outer.min.y, outer.width(), outer.height());
+    let fitted = window_fit::fit(now, work, (960.0, 600.0));
+    if fitted != now {
+        // The frame (title bar, borders) keeps its size; only the inner size follows.
+        let inner_size = egui::vec2((inner.width() - (now.w - fitted.w)).max(1.0), (inner.height() - (now.h - fitted.h)).max(1.0));
+        ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(inner_size));
+        ctx.send_viewport_cmd(egui::ViewportCommand::OuterPosition(egui::pos2(fitted.x, fitted.y)));
+    }
+}
+
+/// `SOLIDCRAFT_PROFILE_STARTUP=1` prints the time since launch at each startup step.
+fn mark(step: &str) {
+    static START: std::sync::OnceLock<(std::time::Instant, bool)> = std::sync::OnceLock::new();
+    let (start, on) = START.get_or_init(|| (std::time::Instant::now(), solidcraft_engine::geom::env::var_os("PROFILE_STARTUP").is_some()));
+    if *on {
+        eprintln!("startup {:>6.0} ms  {step}", start.elapsed().as_secs_f64() * 1000.0);
+    }
+}
 
 struct App {
     solve: SolveApp,
@@ -38,7 +74,9 @@ struct App {
     starting: Option<std::path::PathBuf>,
     /// Frames begun; the second one means the first was drawn (startup is over).
     frames: u32,
-    #[cfg(any(target_os = "windows", target_os = "linux"))]
+    /// Started over the control channel: the window doesn't ask for the foreground.
+    take_focus_unwanted: bool,
+    #[cfg(any(target_os = "windows", target_os = "linux", target_os = "macos"))]
     space_mouse: space_mouse::SpaceMouse,
 }
 
@@ -46,9 +84,23 @@ impl eframe::App for App {
     fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         if self.frames < 2 {
             self.frames += 1;
+            // Before the window is shown: its title bar must be within reach (window_fit.rs).
+            #[cfg(target_os = "windows")]
+            if self.frames == 1 {
+                fit_window_to_work_area(ctx, _frame);
+            }
+            mark(if self.frames == 1 { "first frame begins" } else { "second frame begins (first presented)" });
             // A second frame right away, which means the first was presented: the app is up.
             ctx.request_repaint();
             if self.frames == 2 {
+                // The window is shown only once its first frame is presented, and Windows then
+                // keeps a window of a process started from a shortcut or an installer behind the
+                // others. Ask for the foreground once, now that it is on screen; never again, so
+                // later frames don't take the focus from whatever the user moved to. Automation
+                // over the control channel keeps the focus where it is.
+                if !self.take_focus_unwanted {
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Focus);
+                }
                 solidcraft_engine::crash::phase(solidcraft_engine::crash::RUNNING);
                 if let Some(dir) = self.starting.take() {
                     startup::started(&dir);
@@ -68,7 +120,7 @@ impl eframe::App for App {
             self.solve.open_path_async(&f);
         }
         self.solve.logic(ctx);
-        #[cfg(any(target_os = "windows", target_os = "linux"))]
+        #[cfg(any(target_os = "windows", target_os = "linux", target_os = "macos"))]
         if !self.solve.file_picker_busy() {
             self.space_mouse.tick(&mut self.solve, ctx);
         }
@@ -78,7 +130,7 @@ impl eframe::App for App {
     }
     fn raw_input_hook(&mut self, _ctx: &egui::Context, raw: &mut egui::RawInput) {
         // Before the app's own hook, which adds the control channel's events.
-        #[cfg(any(target_os = "windows", target_os = "linux"))]
+        #[cfg(any(target_os = "windows", target_os = "linux", target_os = "macos"))]
         self.space_mouse.raw_input_hook(self.solve.preferences.space_mouse_enabled, raw);
         self.solve.raw_input_hook(raw);
     }
@@ -91,6 +143,8 @@ impl eframe::App for App {
     fn on_exit(&mut self) {
         // The agent chat's agent and everything it started end with the app.
         solidcraft_ui_egui::agent_chat::shutdown(&mut self.solve);
+        // A save still being written ends before the app does.
+        solidcraft_ui_egui::save_job::tick(&mut self.solve, true);
         solidcraft_ui_egui::recovery_ui::close(&mut self.solve);
         solidcraft_engine::crash::end_session();
         // An update asked to restart into the new version or to run its installer.
@@ -116,10 +170,17 @@ fn services(cc: &eframe::CreationContext<'_>) -> Services {
     let parent = rfd::AsyncFileDialog::new().set_parent(cc);
     let open_parent = parent.clone();
     let program_parent = parent.clone();
+    let file_parent = parent.clone();
     Services {
-        pick_open: Some(Box::new(move || {
-            let future = open_parent
-                .clone()
+        pick_open: Some(Box::new(move |first: &[&str]| {
+            // The file type the command reads comes first, so the picker opens on it (#1801).
+            let mut dialog = open_parent.clone();
+            if !first.is_empty() {
+                let label = first.iter().map(|e| e.to_uppercase()).collect::<Vec<_>>().join(", ");
+                let both: Vec<String> = first.iter().flat_map(|e| [e.to_lowercase(), e.to_uppercase()]).collect();
+                dialog = dialog.add_filter(label, &both);
+            }
+            let future = dialog
                 .add_filter(
                     "Designs, CAD files and meshes",
                     &[
@@ -160,6 +221,22 @@ fn services(cc: &eframe::CreationContext<'_>) -> Services {
                 .pick_file();
             Box::pin(async move { future.await.map(|p| p.path().to_string_lossy().into_owned()) })
         })),
+        // One kind of file (the agent chat's attachments): only the types it names, as given and in
+        // lower and upper case (Linux dialogs match case; macOS allows just the listed types).
+        pick_file: Some(Box::new(move |label: &str, exts: &[&str]| {
+            let mut all: Vec<String> = Vec::new();
+            for e in exts {
+                for v in [e.to_string(), e.to_ascii_lowercase(), e.to_ascii_uppercase()] {
+                    if !all.contains(&v) {
+                        all.push(v);
+                    }
+                }
+            }
+            let all: Vec<&str> = all.iter().map(String::as_str).collect();
+            // Any other file attaches by reference, so the list is not the only choice.
+            let future = file_parent.clone().add_filter(label, &all).add_filter("All files", &["*"]).pick_file();
+            Box::pin(async move { future.await.map(|p| p.path().to_string_lossy().into_owned()) })
+        })),
         pick_program: Some(Box::new(move || {
             let dialog = program_parent.clone().set_title("Choose your slicer");
             let dialog = if cfg!(target_os = "windows") { dialog.add_filter("Programs", &["exe"]) } else { dialog };
@@ -185,6 +262,10 @@ fn services(cc: &eframe::CreationContext<'_>) -> Services {
         http_download: Some(std::sync::Arc::new(http_download)),
         // Already an installed app: only the browser build offers to install.
         install_app: None,
+        can_restore: None,
+        restore_file: None,
+        download_design: None,
+        browser_files: None,
         agent_http: Some(std::sync::Arc::new(agent_http)),
         secrets: Some(std::sync::Arc::new(Keychain)),
         show_in_folder: Some(Box::new(|path| {
@@ -416,6 +497,10 @@ fn msaa() -> u16 {
 const CUSTOM_TITLEBAR: bool = !cfg!(target_os = "macos");
 
 const DEPTH_BITS: u8 = 24;
+/// A 32-bit float depth buffer, drawn with reversed depth (1 near, 0 far) so its precision follows
+/// the distance from the eye (#1434). Only where every adapter offers it with a stencil
+/// ([`startup::float_depth_everywhere`]); else [`DEPTH_BITS`]. Not in safe mode.
+const FLOAT_DEPTH_BITS: u8 = 32;
 /// The section cap marks where it shows in the stencil.
 const STENCIL_BITS: u8 = 8;
 const MSAA: u16 = 4;
@@ -444,6 +529,7 @@ fn app_viewport() -> Result<egui::ViewportBuilder, eframe::Error> {
 const APP_ID: &str = solidcraft_engine::io::APP_ID;
 
 fn main() -> eframe::Result {
+    mark("main");
     adopt_legacy_settings();
     let mut safe_mode = startup::env_on(std::env::var(startup::SAFE_MODE_ENV).ok().as_deref());
     let mut control_port: Option<u16> = solidcraft_engine::geom::env::var("CONTROL_PORT").and_then(|p| p.parse().ok());
@@ -497,6 +583,8 @@ fn main() -> eframe::Result {
         notes.push("Safe mode: default settings (yours are kept for the next normal start), no recovery offer, software rendering.".into());
     }
     let samples = if safe_mode { MSAA } else { msaa() };
+    let wgpu_options = wgpu_options(cpu_renderer, if safe_mode { None } else { backend_preference() }.as_deref());
+    let depth_bits = if !safe_mode && startup::float_depth_everywhere(&wgpu_options) { FLOAT_DEPTH_BITS } else { DEPTH_BITS };
     // Crashes leave a report in the crash folder (solidcraft_engine::crash, docs/crash-reports.md).
     let crashed = solidcraft_engine::crash::default_dir()
         .map(|dir| {
@@ -516,7 +604,7 @@ fn main() -> eframe::Result {
     solidcraft_engine::crash::phase("window");
     let options = eframe::NativeOptions {
         viewport: app_viewport()?,
-        depth_buffer: DEPTH_BITS,
+        depth_buffer: depth_bits,
         stencil_buffer: STENCIL_BITS,
         multisampling: samples,
         // Kept with the other settings, not in a folder named after the app id. Safe mode reads
@@ -529,7 +617,7 @@ fn main() -> eframe::Result {
             settings.as_ref().map(|d| d.join("app.ron"))
         },
         persist_window: !safe_mode,
-        wgpu_options: wgpu_options(cpu_renderer, if safe_mode { None } else { backend_preference() }.as_deref()),
+        wgpu_options,
         ..Default::default()
     };
     #[cfg(all(unix, not(target_os = "macos")))]
@@ -552,13 +640,17 @@ fn main() -> eframe::Result {
     let created = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
     let created_in_app = created.clone();
     let starting = settings.clone();
+    mark("run_native");
     let result = eframe::run_native(
         "SolidCraft",
         options,
         Box::new(move |cc| {
             created_in_app.store(true, std::sync::atomic::Ordering::SeqCst);
             solidcraft_engine::crash::phase("app setup");
-            solidcraft_ui_egui::fonts::setup_fonts(&cc.egui_ctx);
+            mark("window and device ready");
+            solidcraft_ui_egui::fonts::setup_bundled_fonts(&cc.egui_ctx);
+            solidcraft_ui_egui::fonts::load_system_fonts_in_background(&cc.egui_ctx);
+            mark("fonts");
             let mut app = SolveApp::new(Session::default(), services(cc));
             app.apply_off_thread = Some(solidcraft_ui_egui::dialogs::APPLY_AT_ONCE);
             app.custom_titlebar = CUSTOM_TITLEBAR;
@@ -576,10 +668,11 @@ fn main() -> eframe::Result {
             if let Some(p) = cc.storage.and_then(|s| solidcraft_ui_egui::prefs::stored(|k| s.get_string(k))).filter(|_| !safe_mode) {
                 app.load_prefs(&p);
             }
+            mark("app state and prefs");
             if let Some(rs) = &cc.wgpu_render_state {
                 eprintln!("SolidCraft graphics: {:?}, MSAA {}x (requested {}x)", rs.adapter.get_info().backend, rs.msaa_samples, samples);
                 solidcraft_engine::crash::phase("viewport pipelines (shader compile)");
-                app.set_wgpu(rs, DEPTH_BITS, STENCIL_BITS, rs.msaa_samples);
+                app.set_wgpu(rs, depth_bits, STENCIL_BITS, rs.msaa_samples);
                 solidcraft_ui_egui::gpu::install_picture_renderer(rs);
                 // The graphics driver is loaded now; it may have put its own exception filter
                 // in front of ours.
@@ -593,6 +686,7 @@ fn main() -> eframe::Result {
                     info.backend, info.name, info.driver, rs.msaa_samples
                 ));
             }
+            mark("viewport pipelines");
             if let Some(port) = control_port {
                 let rx = control_server::start(port, cc.egui_ctx.clone());
                 app = app.with_control(rx);
@@ -643,14 +737,16 @@ fn main() -> eframe::Result {
             if !notes.is_empty() {
                 app.set_status(notes.join(" "), true);
             }
-            #[cfg(any(target_os = "windows", target_os = "linux"))]
+            #[cfg(any(target_os = "windows", target_os = "linux", target_os = "macos"))]
             let space_mouse = space_mouse::SpaceMouse::start(&cc.egui_ctx);
+            mark("app created");
             solidcraft_engine::crash::phase("first frame");
             Ok(Box::new(App {
                 solve: app,
                 starting,
                 frames: 0,
-                #[cfg(any(target_os = "windows", target_os = "linux"))]
+                take_focus_unwanted: control_port.is_some(),
+                #[cfg(any(target_os = "windows", target_os = "linux", target_os = "macos"))]
                 space_mouse,
             }))
         }),
@@ -685,6 +781,13 @@ fn wgpu_options(cpu: bool, preference: Option<&str>) -> eframe::egui_wgpu::WgpuC
         if cpu {
             setup.native_adapter_selector = Some(std::sync::Arc::new(startup::pick_cpu_adapter));
         }
+        // A float depth buffer with a stencil, wherever the adapter has it (see `FLOAT_DEPTH_BITS`).
+        let base = setup.device_descriptor.clone();
+        setup.device_descriptor = std::sync::Arc::new(move |adapter| {
+            let mut d = base(adapter);
+            d.required_features |= adapter.features() & startup::FLOAT_DEPTH_STENCIL;
+            d
+        });
     }
     options
 }

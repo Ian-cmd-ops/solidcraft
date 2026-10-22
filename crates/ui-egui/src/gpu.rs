@@ -8,8 +8,8 @@ use std::sync::{Arc, Mutex};
 
 use egui_wgpu::wgpu;
 pub use solidcraft_gpu::view::{
-    AccessMap, BlockBytes, Frame, GpuImage, GpuScene, GpuTarget, LINE_SIZE, PBR_SIZE, PlannedBody, Renderer, SceneBlock, SceneSlot, TRI_SIZE,
-    supersampled_size,
+    AccessMap, BlockBytes, Frame, GpuImage, GpuScene, GpuTarget, InstancedMesh, LINE_SIZE, PBR_SIZE, PlannedBody, Renderer, SHARED_SIZE, SceneBlock,
+    SceneSlot, SharedTris, TRI_SIZE, supersampled_size,
 };
 
 /// A frame of the viewport as an egui paint callback.
@@ -142,6 +142,7 @@ pub(crate) fn offscreen_device() -> Option<(wgpu::Adapter, wgpu::Device, wgpu::Q
     let instance = wgpu::Instance::new(desc);
     let adapter = pollster::block_on(instance.request_adapter(&Default::default())).ok()?;
     let (device, queue) = pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
+        required_features: solidcraft_gpu::depth_features(&adapter),
         required_limits: wgpu::Limits::downlevel_defaults().using_resolution(adapter.limits()),
         ..Default::default()
     }))
@@ -253,7 +254,7 @@ fn offscreen(
     let (adapter, device, queue) = offscreen_device()?;
     eprintln!("offscreen adapter: {:?}", adapter.get_info().backend);
     let format = if srgb { wgpu::TextureFormat::Rgba8UnormSrgb } else { wgpu::TextureFormat::Rgba8Unorm };
-    let depth = wgpu::TextureFormat::Depth24PlusStencil8;
+    let depth = solidcraft_gpu::depth_format(&device, true);
     let compute = tess.and_then(|shader| solidcraft_gpu::view::tessellation(&adapter, &device, &queue, shader));
     let target = GpuTarget { format, depth: Some(depth), samples: 1, tess: compute.is_some() };
     let mut resources = egui_wgpu::CallbackResources::default();
@@ -269,6 +270,7 @@ fn offscreen(
         hl_slot: Arc::new(Mutex::new(highlight)),
         pv_key: 0,
         pv_slot: none(),
+        pv_hide: false,
         view_proj,
         back,
         size_px: [size as f32; 2],
@@ -280,6 +282,7 @@ fn offscreen(
         access: None,
         outline: false,
         eye,
+        ao_radius: 0.0,
         ssaa,
     });
     let texture = |format, usage| {

@@ -7,6 +7,7 @@
 use serde_json::json;
 
 use crate::SolveApp;
+use crate::ui_kit;
 
 /// The bodies a just-opened file brought (`before`: body names before it opened, none for a
 /// new design), and the import's component placement from the command's `result`: offer to
@@ -36,48 +37,50 @@ pub fn stand_up(app: &mut SolveApp) -> Result<(), String> {
     Ok(())
 }
 
+/// Dismiss the offer and keep the file as it opened ("Leave it"); the preference stays on.
+pub fn leave(app: &mut SolveApp) {
+    app.stand_up = None;
+    app.stand_up_occurrence = None;
+}
+
 /// The offer, under the toolbar.
 pub fn show(app: &mut SolveApp, ctx: &egui::Context) {
     if app.stand_up.is_none() {
         return;
     }
-    let mut act: Option<&str> = None;
-    crate::frame::window(ctx, crate::i18n::tr_label("Stand this part up?"), crate::frame::Width::Normal)
-        .id(egui::Id::new("sc_stand_up"))
-        .collapsible(false)
-        .resizable(false)
+    let (closed, action) = ui_kit::Window::new(egui::Id::new("sc_stand_up"), "move", crate::i18n::tr_label("Stand this part up?"))
         .anchor(egui::Align2::CENTER_TOP, egui::vec2(0.0, 140.0))
-        .show(ctx, |ui| {
-            ui.label(crate::i18n::tr_label("Files from many CAD programs have Y up, so they open lying on their back here (Z up)."));
-            ui.label(crate::i18n::tr_label("Stand it up: a quarter turn about X, as one Move feature you can undo."));
-            ui.add_space(6.0);
-            ui.horizontal(|ui| {
-                if ui.button(crate::i18n::tr_label("Stand it up")).clicked() {
-                    act = Some("stand");
-                }
-                if ui.button(crate::i18n::tr_label("Leave it")).clicked() {
-                    act = Some("leave");
-                }
-                if ui.button("Don't ask again").on_hover_text("Preferences › Design turns the offer back on").clicked() {
-                    act = Some("never");
-                }
-            });
+        .actions("Stand it up", "Leave it", Some("Don't ask again"))
+        .show(ctx, true, |ui| {
+            ui_kit::text(
+                ui,
+                crate::i18n::tr_label("Files from many CAD programs have Y up, so they open lying on their back here (Z up)."),
+                ui_kit::Text::Report("why", false),
+            );
+            ui_kit::text(
+                ui,
+                crate::i18n::tr_label("Stand it up: a quarter turn about X, as one Move feature you can undo."),
+                ui_kit::Text::Report("how", false),
+            );
+            ui_kit::text(ui, crate::i18n::tr_label("Preferences › Design turns the offer back on"), ui_kit::Text::Note("never"));
         });
-    match act {
-        Some("stand") => {
+    for (handle, key) in [("stand_up:stand", "dialog:ok"), ("stand_up:never", "dialog:apply"), ("stand_up:leave", "dialog:cancel")] {
+        if let Some(at) = crate::scenario::handle_at(key) {
+            crate::scenario::publish_handle(handle, at);
+        }
+    }
+    match action {
+        ui_kit::Action::Ok => {
             if let Err(e) = stand_up(app) {
                 app.set_status(e, true);
             }
         }
-        Some("leave") => {
-            app.stand_up = None;
-            app.stand_up_occurrence = None;
-        }
-        Some("never") => {
-            app.stand_up = None;
-            app.stand_up_occurrence = None;
+        ui_kit::Action::Cancel => leave(app),
+        ui_kit::Action::Apply => {
+            leave(app);
             app.preferences.offer_stand_up = false;
         }
-        _ => {}
+        ui_kit::Action::None if closed => leave(app),
+        ui_kit::Action::None => {}
     }
 }
