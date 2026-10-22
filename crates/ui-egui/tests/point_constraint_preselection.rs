@@ -186,3 +186,22 @@ fn deleting_the_shared_midpoint_glyph_keeps_a_point_another_line_uses() {
     centre_then_delete_glyph(&mut h);
     assert_eq!(point_count(&h), points);
 }
+
+/// The Point tool on a line's Mid snap makes a point held at the middle (#4691), not a bare
+/// point at the same place; one undo takes it away.
+#[test]
+fn point_tool_click_on_a_line_midpoint_keeps_the_midpoint_constraint() {
+    let mut h = setup();
+    let (undo, points) = (h.app.session.undo.len(), point_count(&h));
+    h.step(&json!({"start":"sketch.point"})).unwrap();
+    h.step(&json!({"move":{"sketch":[20, 10]}})).unwrap();
+    h.step(&json!({"click":{"sketch":[20, 10]}})).unwrap();
+    assert_eq!(midpoint_ids(&h).len(), 1, "the click on the Mid snap holds the point at the middle");
+    assert_eq!(point_count(&h), points + 1, "one new point");
+    assert_eq!(h.app.session.undo.len(), undo + 1, "one undo step");
+    // A click away from any snap is still a plain, free point.
+    h.step(&json!({"move":{"sketch":[50, 50]}})).unwrap();
+    h.step(&json!({"click":{"sketch":[50, 50]}})).unwrap();
+    assert_eq!(midpoint_ids(&h).len(), 1, "a free click adds no midpoint constraint");
+    assert_eq!(point_count(&h), points + 2);
+}

@@ -452,7 +452,12 @@ fn run_shape(app: &mut SolveApp, t: &Tool) -> Result<Vec<String>, String> {
             let width = crate::sketch_dims::locked_value(app, t, "Width").unwrap_or_else(|| (2.0 * dir.cross(p[2].0 - p[0].0).abs()).max(1e-3));
             json!({"p0": xy(&p[0]), "p1": xy(&p[1]), "width": width})
         }
-        "sketch.point" => json!({"point": xy(&p[0])}),
+        // A Mid snap names the line: the engine makes the point and holds it at the line's
+        // middle (#4691). Any other click is a plain position.
+        "sketch.point" => match p[0].1.as_deref() {
+            Some(snap) if snap.starts_with("mid:") => json!({"point": snap}),
+            _ => json!({"point": xy(&p[0])}),
+        },
         _ => return Err(format!("drawing {} is not supported", t.cmd)),
     };
     let result = draw(app, t, params)?;

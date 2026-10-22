@@ -113,7 +113,7 @@ pub static COMMANDS: &[CommandSpec] = &[
         .icon("slot_overall")
         .enabled(in_sketch)
         .params(concat!("p0, p1: overall ends, width", connect_doc!(), created_doc!())),
-    CommandSpec::new("sketch.point", "Point", draw_point).at("SKETCH", "CREATE").icon("point").enabled(in_sketch).params(concat!("point: [x,y] (each a number or an expression over the design's parameters: the point is then fixed where it comes to and follows them), id?", connect_doc!(), created_doc!())),
+    CommandSpec::new("sketch.point", "Point", draw_point).at("SKETCH", "CREATE").icon("point").enabled(in_sketch).params(concat!("point: [x,y] (each a number or an expression over the design's parameters: the point is then fixed where it comes to and follows them) or \"mid:<line>\" (a point held at that line's midpoint, as the Mid snap gives; id is then not used), id?", connect_doc!(), created_doc!())),
     CommandSpec::new("sketch.dimension", "Sketch Dimension", dimension).at("SKETCH", "CREATE").icon("dimension").key("D").enabled(in_sketch).params(
         "entities: [refs], type?: auto|distance|horizontal|vertical|length|radius|diameter|angle, value?: number or expression (default: current; a bare number is in the design's units, e.g. 2 means 2 in in an inch design; give a unit such as \"50 mm\" to override), or `name = expression` (e.g. \"width = 40\"), which adds the user parameter `name` with that expression and dimensions with `name` (refused when the name is taken or reserved; the reply's `defined` names it); text_at?: [x, y]. Two points or a line off the axes: with auto, text_at across from them is the distance between them, above or below them horizontal, beside them vertical. Two lines: the angle between them (acute, or 180° − it when the value is nearer that) unless text_at picks a sector. A line and a circle or arc: the distance from the line to its edge (the gap, or how far the edge reaches past a line that cuts it; 0 is tangent); dimension the centre point for the distance to the centre. A dimension the sketch already determines is refused (naming what determines it); if_redundant?: \"driven\" places it as a driven (reference) dimension instead. scale_sketch?: bool (the dimension tool sends true): when this is the sketch's first length dimension and nothing in the sketch fixes a size (no other driving length dimension, nothing fixed or projected), the whole sketch scales about its origin to the value instead of distorting. Returns measured in unit (mm or deg), and scaled: the factor when the sketch was scaled",
     ),
@@ -1386,7 +1386,18 @@ fn slot_overall(s: &mut Session, p: &Value) -> Result<Value> {
 fn draw_point(s: &mut Session, p: &Value) -> Result<Value> {
     let cmd = "sketch.point";
     let id = str_(p, "id").map(str::to_string);
+    // A snapped point ("mid:<line>", as the Mid snap gives) is made, with its constraint, by
+    // `snap_points`, as for `sketch.line`; `point` then names it.
+    let snapped = &super::sketch_project::snap_points(s, p, cmd)?;
+    let is_snapped = snapped.get("point") != p.get("point");
+    let p = snapped;
     let ((pid, cons), info) = edit(s, p, cmd, false, |sk, doc| {
+        if is_snapped {
+            let r = str_(p, "point").unwrap_or_default();
+            let i = sk.resolve_point(r).ok_or_else(|| bad(cmd, format!("unknown sketch point `{r}`")))?;
+            let held = sk.constraints.iter().filter(|c| !c.driven && c.kind.indices().0.contains(&i)).map(|c| c.id.clone()).collect();
+            return Ok((r.to_string(), held));
+        }
         let i = match expr_point(doc, p.get("point").unwrap_or(&Value::Null), cmd)? {
             Some((at, Some(exprs))) => add_placed_point(sk, at, exprs, id.as_deref())?,
             Some((at, None)) => sk.add_point(at, id.as_deref())?,
