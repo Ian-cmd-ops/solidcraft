@@ -239,6 +239,32 @@ fn drawing_from_a_line_midpoint_keeps_it_there() {
 }
 
 #[test]
+fn a_point_drawn_at_a_line_midpoint_keeps_it_there() {
+    let mut s = new_sketch();
+    let l = ids(&run(&mut s, "sketch.line", json!({"points": [[0, 0], [20, 0]]}))["curves"])[0].clone();
+    let r = run(&mut s, "sketch.point", json!({"point": format!("mid:{l}")}));
+    let si = run(&mut s, "sketch.inspect", json!({}));
+    assert!(si["constraints"].as_array().unwrap().iter().any(|c| c["name"] == "MidPoint"), "{si}");
+    assert_eq!(r["constraints"].as_array().map(Vec::len), Some(1), "the reply names the constraint: {r}");
+    // Lengthen the line: the point follows the middle.
+    run(&mut s, "sketch.move_point", json!({"point": format!("{l}.end"), "to": [40, 0]}));
+    let sk = sketch(&s);
+    let p = sk.resolve_point(r["point"].as_str().unwrap()).and_then(|i| sk.point(i)).unwrap();
+    let a = sk.resolve_point(&format!("{l}.start")).and_then(|i| sk.point(i)).unwrap();
+    let b = sk.resolve_point(&format!("{l}.end")).and_then(|i| sk.point(i)).unwrap();
+    assert!(p.dist((a + b) * 0.5) < 1e-7, "{p:?}");
+    // One point, not two: the snap made it and the command did not add another.
+    assert_eq!(sk.points.len(), 3, "line ends and the one new point");
+}
+
+#[test]
+fn a_point_drawn_at_a_missing_line_midpoint_is_refused() {
+    let mut s = new_sketch();
+    assert!(s.execute("sketch.point", &json!({"point": "mid:nope"})).is_err());
+    assert!(sketch(&s).points.is_empty(), "a refused point leaves nothing behind");
+}
+
+#[test]
 fn drawing_onto_a_curve_keeps_the_point_on_it() {
     let mut s = new_sketch();
     let c = ids(&run(&mut s, "sketch.circle.center", json!({"center": [0, 0], "radius": 10}))["curves"])[0].clone();
